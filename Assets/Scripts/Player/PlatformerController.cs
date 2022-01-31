@@ -12,8 +12,9 @@ public class PlatformerController : MonoBehaviour
     public float maxSpeed = 10;
     public float timeToMaxSpeed = 0.5f;
     public float timeToStop = 0.2f;
+    public float timeToMaxSpeedInAir = 1f;
+    public float timeToStopInAir = 0.4f;
     private Vector2 moveInputDirection;
-    public float inAirAccelerationMultiplier = 0.5f;
 
     [Header("Jumping")]
     public float maxJumpHeight = 5;
@@ -195,15 +196,18 @@ public class PlatformerController : MonoBehaviour
         bool b = moveInputDirection.x > 0.01f && velocity.x >= 0;
         if (a || b)
         {
-            // if (!isGrounded)
-            //     targetSpeed = Mathf.Sign(targetSpeed) * Mathf.Max(Mathf.Abs(velocity.x), inAirAccelerationMultiplier * Mathf.Abs(targetSpeed));
-            // print(targetSpeed);
-            newSpeed = Mathf.MoveTowards(velocity.x, targetSpeed, maxSpeed * (1 / timeToMaxSpeed) * Time.deltaTime);
+            if(isGrounded)
+                newSpeed = Mathf.MoveTowards(velocity.x, targetSpeed, maxSpeed * (1 / timeToMaxSpeed) * Time.deltaTime);
+            else
+                newSpeed = Mathf.MoveTowards(velocity.x, targetSpeed, maxSpeed * (1 / timeToMaxSpeedInAir) * Time.deltaTime);
         }
         else
-            newSpeed = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStop) * Time.deltaTime);
-        velocity.x = newSpeed;
+            if(isGrounded)
+                newSpeed = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStop) * Time.deltaTime);
+            else
+                newSpeed = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStopInAir) * Time.deltaTime);
 
+        velocity.x = newSpeed;
         rb.velocity = velocity;
 
 

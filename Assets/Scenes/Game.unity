@@ -3049,9 +3049,11 @@ MonoBehaviour:
   maxSpeed: 15
   timeToMaxSpeed: 0.5
   timeToStop: 0.2
+  timeToMaxSpeedInAir: 1
+  timeToStopInAir: 0.4
   maxJumpHeight: 5
   timeToJumpApex: 0.4
-  maxJumps: 1
+  maxJumps: 2
   gravityMultiplier: 2.5
   maxFallSpeed: -50
   coyoteTime: 0.2
