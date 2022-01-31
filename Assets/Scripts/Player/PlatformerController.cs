@@ -14,7 +14,7 @@ public class PlatformerController : MonoBehaviour
     public float groundCheckThickness = 0.2f;
     private Vector2 groundCheckPosition;
     private Vector2 groundCheckSize;
-    public LayerMask ground;
+    public LayerMask groundMask;
     public bool isGrounded;
     public int maxJumps = 2;
     private int availableJumps;
@@ -28,13 +28,12 @@ public class PlatformerController : MonoBehaviour
     public float maxJumpHeight = 5;
     public float timeToJumpApex = 0.5f;
 
-    private bool isCoyoteTime;
+    private Coroutine CR_coyoteTime;
     public float coyoteTime = 0.2f;
     public float coyoteTimeCounter;
     private Coroutine CR_jumpBuffer;
     public float jumpBuffer = 0.2f;
     public float jumpBufferCounter;
-    private bool isJumpCooldown;
     public float jumpCooldown = 0.2f;
     public float jumpCooldownCounter;
 
@@ -82,7 +81,7 @@ public class PlatformerController : MonoBehaviour
 
         if (value > 0)
         {
-            if(CR_jumpBuffer != null)
+            if (CR_jumpBuffer != null)
                 StopCoroutine(CR_jumpBuffer);
             CR_jumpBuffer = StartCoroutine(JumpBuffer());
         }
@@ -90,22 +89,27 @@ public class PlatformerController : MonoBehaviour
 
     public void TryJump()
     {
-        if (availableJumps > 0 && jumpCooldownCounter >= jumpCooldown)
+        if ((availableJumps > 0 || CR_coyoteTime != null) && jumpCooldownCounter >= jumpCooldown)
         {
-            if(CR_jumpBuffer != null)
+            jumpCooldownCounter = 0;
+            fastFall = false;
+            availableJumps--;
+
+            Vector2 velocity = rb.velocity;
+            velocity.y = (2 * maxJumpHeight) / timeToJumpApex;
+            rb.velocity = velocity;
+
+            if (CR_jumpBuffer != null)
             {
                 StopCoroutine(CR_jumpBuffer);
                 CR_jumpBuffer = null;
             }
 
-            jumpCooldownCounter = 0;
-            fastFall = false;
-            if (!isGrounded)
-                availableJumps--;
-
-            Vector2 velocity = rb.velocity;
-            velocity.y = (2 * maxJumpHeight) / timeToJumpApex;
-            rb.velocity = velocity;
+            if (CR_coyoteTime != null)
+            {
+                StopCoroutine(CR_coyoteTime);
+                CR_coyoteTime = null;
+            }
         }
     }
 
@@ -119,27 +123,42 @@ public class PlatformerController : MonoBehaviour
         //print(value);
     }
 
+    IEnumerator CoyoteTime()
+    {
+        yield return new WaitForSeconds(coyoteTime);
+        CR_coyoteTime = null;
+    }
+
 
     private void Update()
     {
         jumpCooldownCounter += Time.deltaTime;
 
+        print(CR_coyoteTime != null);
+        if (CR_jumpBuffer != null)
+            TryJump();
+
         bool wasGrounded = isGrounded;
-        isGrounded = Physics2D.OverlapBox((Vector2) transform.position + groundCheckPosition, groundCheckSize, 0, ground);
+        isGrounded = Physics2D.BoxCast((Vector2) transform.position + groundCheckPosition, groundCheckSize, 0, Vector2.down, 0, groundMask);
         if (isGrounded)
         {
-            if (CR_jumpBuffer != null)
-                TryJump();
             fastFall = false;
-            availableJumps = maxJumps;
+            if(jumpCooldownCounter > jumpCooldown)
+                availableJumps = maxJumps;
         }
         else
         {
-            if (wasGrounded)
+            if (wasGrounded && jumpCooldownCounter > jumpCooldown)
             {
+                wasGrounded = false;
+                print("DROP");
                 availableJumps--;
+                if (CR_coyoteTime != null)
+                    StopCoroutine(CR_coyoteTime);
+                CR_coyoteTime = StartCoroutine(CoyoteTime());
             }
         }
+
 
         //Movement
         Vector2 velocity = rb.velocity;
@@ -161,7 +180,6 @@ public class PlatformerController : MonoBehaviour
             gravity *= fallMultiplier;
         velocity.y += gravity;
         velocity.y = Mathf.Max(velocity.y, maxFallSpeed);
-        print(velocity.y);
 
 
         rb.velocity = velocity;

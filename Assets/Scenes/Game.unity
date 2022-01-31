@@ -3046,8 +3046,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d76f2b60f7521b488b41a6119ded02c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  groundCheckThickness: 0.2
-  ground:
+  groundCheckThickness: 0.1
+  groundMask:
     serializedVersion: 2
     m_Bits: 1
   isGrounded: 0
