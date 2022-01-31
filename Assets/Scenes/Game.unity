@@ -3057,12 +3057,12 @@ MonoBehaviour:
   timeToStop: 0.2
   maxJumpHeight: 5
   timeToJumpApex: 0.4
-  coyoteTime: 1
-  coyoteTimeCounter: 0
-  jumpBuffer: 0.2
-  jumpBufferCounter: 0
-  jumpCooldown: 0.1
-  jumpCooldownCounter: 0
+  coyoteTime: 0.2
+  timeSinceLeftGround: 0
+  jumpBufferTime: 0.2
+  timeSinceJumpPress: 0
+  jumpCooldownTime: 0.2
+  timeSinceLastJump: 0
   fallMultiplier: 2
   maxFallSpeed: -50
   xpostrail: {fileID: 1998032359}
