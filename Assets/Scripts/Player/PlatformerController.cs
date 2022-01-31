@@ -1,52 +1,55 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Net;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlatformerController : MonoBehaviour
 {
-    private Rigidbody2D rb;
-    private BoxCollider2D collider;
+    [Header("Movement")]
+    public float maxSpeed = 10;
+    public float timeToMaxSpeed = 0.5f;
+    public float timeToStop = 0.2f;
     private Vector2 moveInputDirection;
+    public float inAirAccelerationMultiplier = 0.5f;
 
-    public float groundCheckThickness = 0.2f;
-    private Vector2 groundCheckPosition;
-    private Vector2 groundCheckSize;
-    public LayerMask groundMask;
-    public bool isGrounded;
+    [Header("Jumping")]
+    public float maxJumpHeight = 5;
+    public float timeToJumpApex = 0.5f;
     public int maxJumps = 2;
     private int availableJumps;
     private bool isHoldingJump;
     private bool fastFall;
+    public float gravityMultiplier = 3;
+    public float maxFallSpeed = -50;
 
-    private bool isFalling;
-
-    public float maxSpeed = 10;
-    public float timeToMaxSpeed = 0.5f;
-    public float timeToStop = 0.2f;
-
-    public float maxJumpHeight = 5;
-    public float timeToJumpApex = 0.5f;
-
-    private bool isCoyoteTime;
     public float coyoteTime = 0.2f;
-    public float timeSinceLeftGround;
-    private bool waitingForJump;
+    private bool isCoyoteTime;
+    private float timeSinceLeftGround;
+
     public float jumpBufferTime = 0.2f;
-    public float timeSinceJumpPress;
-    private bool jumpInCooldown;
+    private bool waitingForJump;
+    private float timeSinceJumpPress;
+
     public float jumpCooldownTime = 0.2f;
-    public float timeSinceLastJump;
+    private bool jumpInCooldown;
+    private float timeSinceLastJump;
 
     private bool inAirFromJumping;
     private bool inAirFromFalling;
 
+    [Header("Physics")]
+    public float groundCheckThickness = 0.2f;
+    public LayerMask groundMask;
+    private Rigidbody2D rb;
+    private BoxCollider2D collider;
+    private Vector2 groundCheckPosition;
+    private Vector2 groundCheckSize;
+    private bool isGrounded;
 
-    public float fallMultiplier = 3;
-    public float maxFallSpeed = -50;
-
+    [Header("Other")]
     public Transform xpostrail;
     public Transform xvelrail;
 
@@ -103,6 +106,7 @@ public class PlatformerController : MonoBehaviour
         velocity.y = (2 * maxJumpHeight) / timeToJumpApex;
         rb.velocity = velocity;
 
+        fastFall = false;
         inAirFromJumping = true;
         inAirFromFalling = false;
         timeSinceLastJump = 0;
@@ -133,14 +137,12 @@ public class PlatformerController : MonoBehaviour
         //first frame landing on ground
         if (!wasGrounded && isGrounded)
         {
-            print("Land");
+            
         }
 
         //first frame leaving ground
         if (wasGrounded && !isGrounded)
         {
-            print("Leave");
-
             availableJumps--;
 
             if (jumpInCooldown)
@@ -182,7 +184,7 @@ public class PlatformerController : MonoBehaviour
             fastFall = true;
         float gravity = (-2 * maxJumpHeight) / Mathf.Pow(timeToJumpApex, 2) * Time.deltaTime;
         if (fastFall)
-            gravity *= fallMultiplier;
+            gravity *= gravityMultiplier;
         velocity.y += gravity;
         velocity.y = Mathf.Max(velocity.y, maxFallSpeed);
 
@@ -192,7 +194,12 @@ public class PlatformerController : MonoBehaviour
         bool a = moveInputDirection.x < -0.01f && velocity.x <= 0;
         bool b = moveInputDirection.x > 0.01f && velocity.x >= 0;
         if (a || b)
+        {
+            // if (!isGrounded)
+            //     targetSpeed = Mathf.Sign(targetSpeed) * Mathf.Max(Mathf.Abs(velocity.x), inAirAccelerationMultiplier * Mathf.Abs(targetSpeed));
+            // print(targetSpeed);
             newSpeed = Mathf.MoveTowards(velocity.x, targetSpeed, maxSpeed * (1 / timeToMaxSpeed) * Time.deltaTime);
+        }
         else
             newSpeed = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStop) * Time.deltaTime);
         velocity.x = newSpeed;
