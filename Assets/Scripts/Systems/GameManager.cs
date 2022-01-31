@@ -14,11 +14,15 @@ public class GameManager : SystemSingleton<GameManager>
     [HideInInspector] public GameObject overlayPause;
     [HideInInspector] public GameObject overlaySettings;
     [HideInInspector] public GameObject eventSystem;
+    
+    public static bool applicationIsQuitting = false;
 
     private void Start()
     {
         DontDestroyOnLoad(transform.gameObject);
         
+        Application.quitting += () => applicationIsQuitting = true;
+
         overlayCredits = Instantiate(Resources.Load<GameObject>("Overlay Credits"));
         overlayPause = Instantiate(Resources.Load<GameObject>("Overlay Pause"));
         overlaySettings = Instantiate(Resources.Load<GameObject>("Overlay Settings"));
