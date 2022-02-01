@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -121,9 +120,7 @@ public class PlatformerController : MonoBehaviour
         Jump();
     }
 
-    private float momentumPercentage = 0;
-
-    private void Update()
+    private void FixedUpdate()
     {
         //Jumping Logic
         bool wasGrounded = isGrounded;
@@ -168,7 +165,7 @@ public class PlatformerController : MonoBehaviour
 
         if (inAirFromFalling)
         {
-            timeSinceLeftGround += Time.deltaTime;
+            timeSinceLeftGround += Time.fixedDeltaTime;
             isCoyoteTime = timeSinceLeftGround < coyoteTime;
         }
         else
@@ -176,10 +173,10 @@ public class PlatformerController : MonoBehaviour
             isCoyoteTime = false;
         }
 
-        timeSinceJumpPress += Time.deltaTime;
+        timeSinceJumpPress += Time.fixedDeltaTime;
         waitingForJump = timeSinceJumpPress < jumpBufferTime;
 
-        timeSinceLastJump += Time.deltaTime;
+        timeSinceLastJump += Time.fixedDeltaTime;
         jumpInCooldown = timeSinceLastJump < jumpCooldownTime;
 
 
@@ -188,44 +185,47 @@ public class PlatformerController : MonoBehaviour
         //Gravity
         if (velocity.y < 0)
             fastFall = true;
-        float gravity = (-2 * maxJumpHeight) / Mathf.Pow(timeToJumpApex, 2) * Time.deltaTime;
+        float gravity = (-2 * maxJumpHeight) / Mathf.Pow(timeToJumpApex, 2) * Time.fixedDeltaTime;
         if (fastFall)
             gravity *= gravityMultiplier;
         velocity.y += gravity;
         velocity.y = Mathf.Max(velocity.y, maxFallSpeed);
 
         //Movement
+        print(velocity.x);
+
         float targetVelocity = moveInputDirection.x * maxSpeed;
+        float percentSpeed = Mathf.Abs(velocity.x) / maxSpeed;
         bool a = moveInputDirection.x < -0.01f && velocity.x <= 0;
         bool b = moveInputDirection.x > 0.01f && velocity.x >= 0;
         if (a || b)
         {
             if (isGrounded)
-                momentumPercentage = Mathf.Clamp01(momentumPercentage + ((1 / timeToMaxSpeed) * Time.deltaTime));
+                percentSpeed = Mathf.Clamp01(percentSpeed + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime));
             else
-                momentumPercentage = Mathf.Clamp01(momentumPercentage + ((1 / timeToMaxSpeed) * Time.deltaTime) * inAirAccelerationMultiplier);
-            newVelocity = maxSpeed * accelerationCurve.Evaluate(momentumPercentage) * Mathf.Sign(moveInputDirection.x);
+                percentSpeed = Mathf.Clamp01(percentSpeed + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime) * inAirAccelerationMultiplier);
+            
+            velocity.x = maxSpeed * accelerationCurve.Evaluate(percentSpeed) * Mathf.Sign(moveInputDirection.x);
             
             // if (isGrounded)
-            //     newVelocity = Mathf.MoveTowards(velocity.x, targetVelocity, maxSpeed * (1 / timeToMaxSpeed) * Time.deltaTime);
+            //     newVelocity = Mathf.MoveTowards(velocity.x, targetVelocity, maxSpeed * (1 / timeToMaxSpeed) * Time.fixedDeltaTime);
             // else
-            //     newVelocity = Mathf.MoveTowards(velocity.x, targetVelocity, maxSpeed * (1 / timeToMaxSpeed) * Time.deltaTime * inAirAccelerationMultiplier);
+            //     newVelocity = Mathf.MoveTowards(velocity.x, targetVelocity, maxSpeed * (1 / timeToMaxSpeed) * Time.fixedDeltaTime * inAirAccelerationMultiplier);
         }
         else
         {
             if (isGrounded)
-                momentumPercentage = Mathf.Clamp01(momentumPercentage - ((1 / timeToStop) * Time.deltaTime));
+                percentSpeed = Mathf.Clamp01(percentSpeed - ((1 / timeToStop) * Time.fixedDeltaTime));
             else
-                momentumPercentage = Mathf.Clamp01(momentumPercentage - ((1 / timeToStop) * Time.deltaTime) * inAirDecelerationMultiplier);
-            newVelocity = maxSpeed * decelerationCurve.Evaluate(1 - momentumPercentage) * Mathf.Sign(velocity.x); //wall bump issue
+                percentSpeed = Mathf.Clamp01(percentSpeed - ((1 / timeToStop) * Time.fixedDeltaTime) * inAirDecelerationMultiplier);
+            
+            velocity.x = maxSpeed * decelerationCurve.Evaluate(1 - percentSpeed) * Mathf.Sign(velocity.x);
 
             // if (isGrounded)
-            //     newVelocity = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStop) * Time.deltaTime);
+            //     newVelocity = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStop) * Time.fixedDeltaTime);
             // else
-            //     newVelocity = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStop) * Time.deltaTime * inAirDecelerationMultiplier);
+            //     newVelocity = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStop) * Time.fixedDeltaTime * inAirDecelerationMultiplier);
         }
-        print(momentumPercentage);
-        velocity.x = newVelocity;
         rb.velocity = velocity;
 
 
