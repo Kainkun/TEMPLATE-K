@@ -192,24 +192,22 @@ public class PlatformerController : MonoBehaviour
 
         //Movement
         float targetVelocity = moveInputDirection.x * maxSpeed;
-        float newVelocity;
         bool a = moveInputDirection.x < -0.01f && velocity.x <= 0;
         bool b = moveInputDirection.x > 0.01f && velocity.x >= 0;
         if (a || b)
         {
             if (isGrounded)
-                newVelocity = Mathf.MoveTowards(velocity.x, targetVelocity, maxSpeed * (1 / timeToMaxSpeed) * Time.deltaTime);
+                velocity.x = Mathf.MoveTowards(velocity.x, targetVelocity, maxSpeed * (1 / timeToMaxSpeed) * Time.deltaTime);
             else
-                newVelocity = Mathf.MoveTowards(velocity.x, targetVelocity, maxSpeed * (1 / timeToMaxSpeed) * Time.deltaTime * inAirAccelerationMultiplier);
+                velocity.x = Mathf.MoveTowards(velocity.x, targetVelocity, maxSpeed * (1 / timeToMaxSpeed) * Time.deltaTime * inAirAccelerationMultiplier);
         }
         else
         {
             if (isGrounded)
-                newVelocity = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStop) * Time.deltaTime);
+                velocity.x = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStop) * Time.deltaTime);
             else
-                newVelocity = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStop) * Time.deltaTime * inAirDecelerationMultiplier);
+                velocity.x = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStop) * Time.deltaTime * inAirDecelerationMultiplier);
         }
-        velocity.x = newVelocity;
         rb.velocity = velocity;
 
 
