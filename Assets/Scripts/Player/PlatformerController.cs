@@ -45,7 +45,7 @@ public class PlatformerController : MonoBehaviour
     public float groundCheckThickness = 0.2f;
     public LayerMask groundMask;
     private Rigidbody2D rb;
-    private BoxCollider2D collider;
+    private BoxCollider2D boxCollider;
     private Vector2 groundCheckPosition;
     private Vector2 groundCheckSize;
     private bool isGrounded;
@@ -64,10 +64,10 @@ public class PlatformerController : MonoBehaviour
         availableJumps = maxJumps;
 
         rb = GetComponent<Rigidbody2D>();
-        collider = GetComponent<BoxCollider2D>();
+        boxCollider = GetComponent<BoxCollider2D>();
 
-        groundCheckPosition = new Vector2(0, -collider.size.y / 2);
-        groundCheckSize = new Vector2(collider.size.x, groundCheckThickness);
+        groundCheckPosition = new Vector2(0, -boxCollider.size.y / 2);
+        groundCheckSize = new Vector2(boxCollider.size.x, groundCheckThickness);
 
         timeSinceJumpPress = jumpCooldownTime;
         timeSinceLastJump = jumpCooldownTime;
@@ -192,13 +192,10 @@ public class PlatformerController : MonoBehaviour
         velocity.y = Mathf.Max(velocity.y, maxFallSpeed);
 
         //Movement
-        print(velocity.x);
-
-        float targetVelocity = moveInputDirection.x * maxSpeed;
         float percentSpeed = Mathf.Abs(velocity.x) / maxSpeed;
-        bool a = moveInputDirection.x < -0.01f && velocity.x <= 0;
-        bool b = moveInputDirection.x > 0.01f && velocity.x >= 0;
-        if (a || b)
+        bool a = moveInputDirection.x < -0.01f && velocity.x <= 0.1f;
+        bool b = moveInputDirection.x > 0.01f && velocity.x >= -0.1f;
+        if (a || b) //accelerate
         {
             if (isGrounded)
                 percentSpeed = Mathf.Clamp01(percentSpeed + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime));
@@ -206,13 +203,8 @@ public class PlatformerController : MonoBehaviour
                 percentSpeed = Mathf.Clamp01(percentSpeed + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime) * inAirAccelerationMultiplier);
             
             velocity.x = maxSpeed * accelerationCurve.Evaluate(percentSpeed) * Mathf.Sign(moveInputDirection.x);
-            
-            // if (isGrounded)
-            //     newVelocity = Mathf.MoveTowards(velocity.x, targetVelocity, maxSpeed * (1 / timeToMaxSpeed) * Time.fixedDeltaTime);
-            // else
-            //     newVelocity = Mathf.MoveTowards(velocity.x, targetVelocity, maxSpeed * (1 / timeToMaxSpeed) * Time.fixedDeltaTime * inAirAccelerationMultiplier);
         }
-        else
+        else //decelerate
         {
             if (isGrounded)
                 percentSpeed = Mathf.Clamp01(percentSpeed - ((1 / timeToStop) * Time.fixedDeltaTime));
@@ -220,15 +212,10 @@ public class PlatformerController : MonoBehaviour
                 percentSpeed = Mathf.Clamp01(percentSpeed - ((1 / timeToStop) * Time.fixedDeltaTime) * inAirDecelerationMultiplier);
             
             velocity.x = maxSpeed * decelerationCurve.Evaluate(1 - percentSpeed) * Mathf.Sign(velocity.x);
-
-            // if (isGrounded)
-            //     newVelocity = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStop) * Time.fixedDeltaTime);
-            // else
-            //     newVelocity = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStop) * Time.fixedDeltaTime * inAirDecelerationMultiplier);
         }
         rb.velocity = velocity;
 
-
+        //Debug trails
         Vector2 v = xpostrail.position;
         v.x += Time.fixedDeltaTime;
         v.y = transform.position.x;
