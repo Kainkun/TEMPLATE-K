@@ -9,7 +9,7 @@ using UnityEngine.InputSystem;
 public class PlatformerController : MonoBehaviour
 {
     [Header("Movement")]
-    public float maxSpeed = 15;
+    public float maxSpeed = 10;
     public float timeToMaxSpeed = 0.5f;
     public float timeToStop = 0.2f;
     public float inAirAccelerationMultiplier = 0.5f;
@@ -17,12 +17,12 @@ public class PlatformerController : MonoBehaviour
     private Vector2 moveInputDirection;
 
     [Header("Jumping")]
-    public float maxJumpHeight = 6;
+    public float maxJumpHeight = 5;
     public float timeToJumpApex = 0.5f;
     public int maxJumps = 2;
     private int availableJumps;
     private bool fastFall;
-    public float gravityMultiplier = 2;
+    public float gravityMultiplier = 3;
     public float maxFallSpeed = -50;
 
     public float coyoteTime = 0.2f;
@@ -41,8 +41,8 @@ public class PlatformerController : MonoBehaviour
     private bool inAirFromFalling;
 
     [Header("Physics")]
-    public float groundCheckThickness = 0.1f;
-    public LayerMask groundMask = 1;
+    public float groundCheckThickness = 0.2f;
+    public LayerMask groundMask;
     private Rigidbody2D rb;
     private BoxCollider2D collider;
     private Vector2 groundCheckPosition;
@@ -212,11 +212,11 @@ public class PlatformerController : MonoBehaviour
 
 
         Vector2 v = xpostrail.position;
-        v.x += Time.deltaTime;
+        v.x += Time.fixedDeltaTime;
         v.y = transform.position.x;
         xpostrail.position = v;
         v = xvelrail.position;
-        v.x += Time.deltaTime;
+        v.x += Time.fixedDeltaTime;
         v.y = rb.velocity.x;
         xvelrail.position = v;
     }
