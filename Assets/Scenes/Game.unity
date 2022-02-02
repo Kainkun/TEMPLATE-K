@@ -4966,7 +4966,7 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 50
+  m_Mass: 10
   m_LinearDrag: 0
   m_AngularDrag: 0.05
   m_GravityScale: 1
@@ -5035,7 +5035,7 @@ Transform:
   m_GameObject: {fileID: 1726947790}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 20, y: 2.6, z: 0}
-  m_LocalScale: {x: 7.5853777, y: 7.5853777, z: 7.5853777}
+  m_LocalScale: {x: 5.5773764, y: 5.5773764, z: 5.5773764}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 5
@@ -5905,20 +5905,20 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 0
-      inSlope: 1
-      outSlope: 1
-      tangentMode: 34
+      inSlope: 0.08148148
+      outSlope: 0.08148148
+      tangentMode: 0
       weightedMode: 3
       inWeight: 0
-      outWeight: 0.33333334
+      outWeight: 0.6818181
     - serializedVersion: 3
       time: 1
       value: 1
-      inSlope: 1
-      outSlope: 1
-      tangentMode: 34
+      inSlope: 2.9449725
+      outSlope: 2.9449725
+      tangentMode: 0
       weightedMode: 3
-      inWeight: 0.33333334
+      inWeight: 0.14462817
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
