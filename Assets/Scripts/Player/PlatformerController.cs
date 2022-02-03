@@ -133,12 +133,12 @@ public class PlatformerController : MonoBehaviour
             {
                 float distToPrevious = curve.keys[i].time - curve.keys[i - 1].time;
                 float inHandleLengthX = curve.keys[i].inWeight * distToPrevious;
-                float inHandleLengthY = -curve.keys[i].inTangent * inHandleLengthX;
+                float inHandleLengthY = curve.keys[i].inTangent * inHandleLengthX;
 
                 float reverseInHandleLengthX = -inHandleLengthY;
 
                 float reverseDistToPrevious = reverseKeyframes[i].time - reverseKeyframes[i - 1].time;
-                reverseKeyframes[i].inWeight = -reverseInHandleLengthX / reverseDistToPrevious;
+                reverseKeyframes[i].inWeight = reverseInHandleLengthX / reverseDistToPrevious;
             }
 
             if (i != curve.keys.Length - 1)
@@ -147,7 +147,7 @@ public class PlatformerController : MonoBehaviour
                 float outHandleLengthX = curve.keys[i].outWeight * distToNext;
                 float outHandleLengthY = curve.keys[i].outTangent * outHandleLengthX;
 
-                float reverseOutHandleLengthX = outHandleLengthY;
+                float reverseOutHandleLengthX = -outHandleLengthY;
 
                 float reverseDistToNext = reverseKeyframes[i + 1].time - reverseKeyframes[i].time;
                 reverseKeyframes[i].outWeight = reverseOutHandleLengthX / reverseDistToNext;
@@ -237,11 +237,10 @@ public class PlatformerController : MonoBehaviour
         //print("TIME:" + inverseAccelerationCurve.keys[1].time + "  " + "VALUE:" + inverseAccelerationCurve.keys[1].value + "  " + "IN-T:" + inverseAccelerationCurve.keys[1].inTangent + "  " + "IN-W:" + inverseAccelerationCurve.keys[1].inWeight + "  " + "OUT-T:" + inverseAccelerationCurve.keys[1].outTangent + "  " + "OUT-W:" + inverseAccelerationCurve.keys[1].outWeight);
         
         // print("AAAAAAAAAAAAAAAAAAAAAAAAA");
-        print("TIME:" + decelerationCurve.keys[0].time + "  " + "VALUE:" + decelerationCurve.keys[0].value + "  " + "IN-T:" + decelerationCurve.keys[0].inTangent + "  " + "IN-W:" + decelerationCurve.keys[0].inWeight + "  " + "OUT-T:" + decelerationCurve.keys[0].outTangent + "  " + "OUT-W:" + decelerationCurve.keys[0].outWeight);
+        //print("TIME:" + decelerationCurve.keys[1].time + "  " + "VALUE:" + decelerationCurve.keys[1].value + "  " + "IN-T:" + decelerationCurve.keys[1].inTangent + "  " + "IN-W:" + decelerationCurve.keys[1].inWeight + "  " + "OUT-T:" + decelerationCurve.keys[1].outTangent + "  " + "OUT-W:" + decelerationCurve.keys[1].outWeight);
         inverseDecelerationCurve = InverseDecreasingCurve(decelerationCurve);
-        print("TIME:" + inverseDecelerationCurve.keys[0].time + "  " + "VALUE:" + inverseDecelerationCurve.keys[0].value + "  " + "IN-T:" + inverseDecelerationCurve.keys[0].inTangent + "  " + "IN-W:" + inverseDecelerationCurve.keys[0].inWeight + "  " + "OUT-T:" + inverseDecelerationCurve.keys[0].outTangent + "  " + "OUT-W:" + inverseDecelerationCurve.keys[0].outWeight);
+        //print("TIME:" + inverseDecelerationCurve.keys[1].time + "  " + "VALUE:" + inverseDecelerationCurve.keys[1].value + "  " + "IN-T:" + inverseDecelerationCurve.keys[1].inTangent + "  " + "IN-W:" + inverseDecelerationCurve.keys[1].inWeight + "  " + "OUT-T:" + inverseDecelerationCurve.keys[1].outTangent + "  " + "OUT-W:" + inverseDecelerationCurve.keys[1].outWeight);
 
-        return;
         
         //Jumping Logic
         bool wasGrounded = isGrounded;
@@ -328,11 +327,11 @@ public class PlatformerController : MonoBehaviour
         else //decelerate
         {
             if (isGrounded)
-                percentSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(percentSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime));
+                percentSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(-percentSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime));
             else
-                percentSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(percentSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime) * inAirDecelerationMultiplier);
+                percentSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(-percentSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime) * inAirDecelerationMultiplier);
             
-            velocity.x = maxSpeed * decelerationCurve.Evaluate(1 - percentSpeed) * Mathf.Sign(velocity.x);
+            velocity.x = maxSpeed * decelerationCurve.Evaluate(-percentSpeed) * Mathf.Sign(velocity.x);
         }
         rb.velocity = velocity;
 

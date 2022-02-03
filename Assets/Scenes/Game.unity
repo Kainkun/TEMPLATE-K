@@ -4966,7 +4966,7 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 50
+  m_Mass: 10
   m_LinearDrag: 0
   m_AngularDrag: 0.05
   m_GravityScale: 1
@@ -5905,20 +5905,20 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 0
-      inSlope: 0
-      outSlope: 1
+      inSlope: 0.06401507
+      outSlope: 0.06401507
       tangentMode: 0
       weightedMode: 3
       inWeight: 0
-      outWeight: 0.25
+      outWeight: 0.77078885
     - serializedVersion: 3
       time: 1
       value: 1
-      inSlope: 1
-      outSlope: 0
+      inSlope: 9.783357
+      outSlope: 9.783357
       tangentMode: 0
       weightedMode: 3
-      inWeight: 0.25
+      inWeight: 0.043710113
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
@@ -5929,17 +5929,17 @@ MonoBehaviour:
     - serializedVersion: 3
       time: -1
       value: 1
-      inSlope: 0
-      outSlope: -1
+      inSlope: -0.86300164
+      outSlope: -0.86300164
       tangentMode: 0
       weightedMode: 3
       inWeight: 0
-      outWeight: 0.25
+      outWeight: 0.2782517
     - serializedVersion: 3
       time: 0
       value: 0
       inSlope: -1
-      outSlope: 0
+      outSlope: -1
       tangentMode: 0
       weightedMode: 3
       inWeight: 0.25
