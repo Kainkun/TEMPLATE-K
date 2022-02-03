@@ -5894,7 +5894,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d76f2b60f7521b488b41a6119ded02c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxSpeed: 10
+  maxSpeed: 15
   timeToMaxSpeed: 0.5
   timeToStop: 0.2
   inAirAccelerationMultiplier: 0.5
@@ -5905,20 +5905,20 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 0
-      inSlope: 0.06401507
-      outSlope: 0.06401507
+      inSlope: 0
+      outSlope: 1
       tangentMode: 0
       weightedMode: 3
       inWeight: 0
-      outWeight: 0.77078885
+      outWeight: 0.25
     - serializedVersion: 3
       time: 1
       value: 1
-      inSlope: 9.783357
-      outSlope: 9.783357
+      inSlope: 1
+      outSlope: 0
       tangentMode: 0
       weightedMode: 3
-      inWeight: 0.043710113
+      inWeight: 0.25
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
@@ -5929,17 +5929,17 @@ MonoBehaviour:
     - serializedVersion: 3
       time: -1
       value: 1
-      inSlope: -0.86300164
-      outSlope: -0.86300164
+      inSlope: 0
+      outSlope: -1
       tangentMode: 0
       weightedMode: 3
       inWeight: 0
-      outWeight: 0.2782517
+      outWeight: 0.25
     - serializedVersion: 3
       time: 0
       value: 0
       inSlope: -1
-      outSlope: -1
+      outSlope: 0
       tangentMode: 0
       weightedMode: 3
       inWeight: 0.25
@@ -5967,10 +5967,10 @@ MonoBehaviour:
   coyoteTime: 0.2
   jumpBufferTime: 0.2
   jumpCooldownTime: 0.2
-  groundCheckThickness: 0.2
+  groundCheckThickness: 0.1
   groundMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 1
   xpostrail: {fileID: 1998032359}
   xvelrail: {fileID: 1675388496}
 --- !u!96 &2021167710

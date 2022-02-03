@@ -8,7 +8,7 @@ using UnityEngine.InputSystem;
 public class PlatformerController : MonoBehaviour
 {
     [Header("Movement")]
-    public float maxSpeed = 10;
+    public float maxSpeed = 15;
     public float timeToMaxSpeed = 0.5f;
     public float timeToStop = 0.2f;
     public float inAirAccelerationMultiplier = 0.5f;
@@ -28,11 +28,11 @@ public class PlatformerController : MonoBehaviour
     public float gravityMultiplier = 3;
     public float maxFallSpeed = -50;
 
-    public float coyoteTime = 0.2f;
+    public float coyoteTime = 0.1f;
     private bool isCoyoteTime;
     private float timeSinceLeftGround;
 
-    public float jumpBufferTime = 0.2f;
+    public float jumpBufferTime = 0.1f;
     private bool waitingForJump;
     private float timeSinceJumpPress;
 
@@ -44,8 +44,8 @@ public class PlatformerController : MonoBehaviour
     private bool inAirFromFalling;
 
     [Header("Physics")]
-    public float groundCheckThickness = 0.2f;
-    public LayerMask groundMask;
+    public float groundCheckThickness = 0.1f;
+    public LayerMask groundMask = 1;
     private Rigidbody2D rb;
     private BoxCollider2D boxCollider;
     private Vector2 groundCheckPosition;
