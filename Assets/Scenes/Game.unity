@@ -5436,7 +5436,7 @@ PlatformEffector2D:
   m_RotationalOffset: 0
   m_UseOneWay: 1
   m_UseOneWayGrouping: 0
-  m_SurfaceArc: 180
+  m_SurfaceArc: 146.2
   m_UseSideFriction: 0
   m_UseSideBounce: 0
   m_SideArc: 1
@@ -5507,7 +5507,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 48e93eef0688c4a259cb0eddcd8661f7, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.68553454, g: 1, b: 0.69514346, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -6023,9 +6023,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d76f2b60f7521b488b41a6119ded02c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxSpeed: 15
-  timeToMaxSpeed: 0.5
-  timeToStop: 0.2
+  maxSpeed: 10
+  timeToMaxSpeed: 0.2
+  timeToStop: 0.1
   inAirAccelerationMultiplier: 0.5
   inAirDecelerationMultiplier: 0.5
   accelerationCurve:
@@ -6034,20 +6034,20 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 0
-      inSlope: 0
-      outSlope: 1
+      inSlope: 92.29628
+      outSlope: 92.29628
       tangentMode: 0
       weightedMode: 3
       inWeight: 0
-      outWeight: 0.25
+      outWeight: 0.0056179776
     - serializedVersion: 3
       time: 1
       value: 1
-      inSlope: 1
-      outSlope: 0
+      inSlope: 0.036625728
+      outSlope: 0.036625728
       tangentMode: 0
       weightedMode: 3
-      inWeight: 0.25
+      inWeight: 0.505618
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
@@ -6058,20 +6058,20 @@ MonoBehaviour:
     - serializedVersion: 3
       time: -1
       value: 1
-      inSlope: 0
-      outSlope: -1
+      inSlope: -0.06243005
+      outSlope: -0.06243005
       tangentMode: 0
       weightedMode: 3
       inWeight: 0
-      outWeight: 0.25
+      outWeight: 0.49438208
     - serializedVersion: 3
       time: 0
       value: 0
-      inSlope: -1
-      outSlope: 0
+      inSlope: -13.028245
+      outSlope: -13.028245
       tangentMode: 0
       weightedMode: 3
-      inWeight: 0.25
+      inWeight: 0.03932576
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
@@ -6089,9 +6089,9 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   maxJumpHeight: 5
-  timeToJumpApex: 0.5
+  timeToJumpApex: 0.4
   maxJumps: 2
-  gravityMultiplier: 3
+  gravityMultiplier: 2
   maxFallSpeed: -50
   coyoteTime: 0.1
   jumpBufferTime: 0.1

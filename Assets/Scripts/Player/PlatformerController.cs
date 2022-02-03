@@ -200,12 +200,19 @@ public class PlatformerController : MonoBehaviour
         //print(value);
     }
 
+    private bool jumpButtonHolding;
     public void HandleJump(float value)
     {
         if (value > 0)
+        {
+            jumpButtonHolding = true;
             timeSinceJumpPress = 0;
+        }
         else
+        {
+            jumpButtonHolding = false;
             fastFall = true;
+        }
     }
 
 
@@ -215,7 +222,7 @@ public class PlatformerController : MonoBehaviour
         velocity.y = (2 * maxJumpHeight) / timeToJumpApex;
         rb.velocity = velocity;
 
-        fastFall = false;
+        fastFall = !jumpButtonHolding;
         inAirFromJumping = true;
         inAirFromFalling = false;
         timeSinceLastJump = 0;
@@ -251,17 +258,17 @@ public class PlatformerController : MonoBehaviour
 
         if (isGrounded)
         {
-            fastFall = true;
-            timeSinceLeftGround = 0;
-            inAirFromJumping = false;
-            inAirFromFalling = false;
-            availableJumps = maxJumps;
+
         }
 
         //first frame landing on ground
         if (!wasGrounded && isGrounded)
         {
-            
+            fastFall = true;
+            timeSinceLeftGround = 0;
+            inAirFromJumping = false;
+            inAirFromFalling = false;
+            availableJumps = maxJumps;
         }
 
         //first frame leaving ground
@@ -272,7 +279,6 @@ public class PlatformerController : MonoBehaviour
             if (jumpInCooldown)
             {
                 inAirFromJumping = true;
-                fastFall = false;
             }
             else
                 inAirFromFalling = true;
