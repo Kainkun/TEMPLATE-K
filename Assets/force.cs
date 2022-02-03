@@ -9,8 +9,9 @@ public class force : MonoBehaviour
     void Update()
     {
         if(Input.GetKeyDown(KeyCode.E))
-            GetComponent<Rigidbody2D>().AddForce(new Vector2(f,0), ForceMode2D.Impulse);
+            GetComponent<Rigidbody2D>().velocity = new Vector2(f,0);
         if(Input.GetKeyDown(KeyCode.Q))
-            GetComponent<Rigidbody2D>().AddForce(new Vector2(-f,0), ForceMode2D.Impulse);
+            GetComponent<Rigidbody2D>().velocity = new Vector2(-f,0);
+
     }
 }

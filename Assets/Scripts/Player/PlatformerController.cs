@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -16,7 +15,9 @@ public class PlatformerController : MonoBehaviour
     public float inAirDecelerationMultiplier = 0.5f;
     private Vector2 moveInputDirection;
     public AnimationCurve accelerationCurve = new AnimationCurve(new Keyframe(0, 0,0,1, 0,0.25f), new Keyframe(1, 1, 1, 0, 0.25f, 0));
-    public AnimationCurve decelerationCurve = new AnimationCurve(new Keyframe(0, 1,0,-1, 0,0.25f), new Keyframe(1, 0, -1, 0, 0.25f, 0));
+    public AnimationCurve decelerationCurve = new AnimationCurve(new Keyframe(-1, 1,0,-1, 0,0.25f), new Keyframe(0, 0, -1, 0, 0.25f, 0));
+    public AnimationCurve inverseAccelerationCurve;
+    public AnimationCurve inverseDecelerationCurve;
 
     [Header("Jumping")]
     public float maxJumpHeight = 5;
@@ -56,8 +57,113 @@ public class PlatformerController : MonoBehaviour
     public Transform xvelrail;
 
 
+    static AnimationCurve InverseIncreasingCurve(AnimationCurve curve)
+    {
+        var reverse = new AnimationCurve();
+        for (int i = 0; i < curve.keys.Length; i++)
+        {
+            var keyframe = curve.keys[i];
+            var reverseKeyframe = new Keyframe();
+            reverseKeyframe.weightedMode = WeightedMode.Both;
+            
+            reverseKeyframe.value = keyframe.time;
+            reverseKeyframe.time = keyframe.value;
+            
+            reverseKeyframe.inTangent = 1 / keyframe.inTangent;
+            reverseKeyframe.outTangent = 1 / keyframe.outTangent;
+            
+            reverse.AddKey(reverseKeyframe);
+        }
+        for (int i = 0; i < curve.keys.Length; i++)
+        {
+            Keyframe[] reverseKeyframes = reverse.keys;
+            
+            if (i != 0)
+            {
+                float distToPrevious = curve.keys[i].time - curve.keys[i - 1].time;
+                float inHandleLengthX = curve.keys[i].inWeight * distToPrevious;
+                float inHandleLengthY = -curve.keys[i].inTangent * inHandleLengthX;
+
+                float reverseInHandleLengthX = inHandleLengthY;
+
+                float reverseDistToPrevious = reverseKeyframes[i].time - reverseKeyframes[i - 1].time;
+                reverseKeyframes[i].inWeight = -reverseInHandleLengthX / reverseDistToPrevious;
+            }
+
+            if (i != curve.keys.Length - 1)
+            {
+                float distToNext = curve.keys[i + 1].time - curve.keys[i].time;
+                float outHandleLengthX = curve.keys[i].outWeight * distToNext;
+                float outHandleLengthY = curve.keys[i].outTangent * outHandleLengthX;
+
+                float reverseOutHandleLengthX = outHandleLengthY;
+
+                float reverseDistToNext = reverseKeyframes[i + 1].time - reverseKeyframes[i].time;
+                reverseKeyframes[i].outWeight = reverseOutHandleLengthX / reverseDistToNext;
+            }
+
+            reverse.keys = reverseKeyframes;
+        }
+
+        return reverse;
+    }
+
+    static AnimationCurve InverseDecreasingCurve(AnimationCurve curve)
+    {
+        var reverse = new AnimationCurve();
+        for (int i = 0; i < curve.keys.Length; i++)
+        {
+            var keyframe = curve.keys[i];
+            var reverseKeyframe = new Keyframe();
+            reverseKeyframe.weightedMode = WeightedMode.Both;
+            
+            reverseKeyframe.value = -keyframe.time;
+            reverseKeyframe.time = -keyframe.value;
+            
+            reverseKeyframe.inTangent = 1 / keyframe.inTangent;
+            reverseKeyframe.outTangent = 1 / keyframe.outTangent;
+            
+            reverse.AddKey(reverseKeyframe);
+        }
+        for (int i = 0; i < curve.keys.Length; i++)
+        {
+            Keyframe[] reverseKeyframes = reverse.keys;
+            
+            if (i != 0)
+            {
+                float distToPrevious = curve.keys[i].time - curve.keys[i - 1].time;
+                float inHandleLengthX = curve.keys[i].inWeight * distToPrevious;
+                float inHandleLengthY = -curve.keys[i].inTangent * inHandleLengthX;
+
+                float reverseInHandleLengthX = -inHandleLengthY;
+
+                float reverseDistToPrevious = reverseKeyframes[i].time - reverseKeyframes[i - 1].time;
+                reverseKeyframes[i].inWeight = -reverseInHandleLengthX / reverseDistToPrevious;
+            }
+
+            if (i != curve.keys.Length - 1)
+            {
+                float distToNext = curve.keys[i + 1].time - curve.keys[i].time;
+                float outHandleLengthX = curve.keys[i].outWeight * distToNext;
+                float outHandleLengthY = curve.keys[i].outTangent * outHandleLengthX;
+
+                float reverseOutHandleLengthX = outHandleLengthY;
+
+                float reverseDistToNext = reverseKeyframes[i + 1].time - reverseKeyframes[i].time;
+                reverseKeyframes[i].outWeight = reverseOutHandleLengthX / reverseDistToNext;
+            }
+
+            reverse.keys = reverseKeyframes;
+        }
+
+        return reverse;
+    }
+
+
     private void Start()
     {
+        inverseAccelerationCurve = InverseIncreasingCurve(accelerationCurve);
+        inverseDecelerationCurve = InverseDecreasingCurve(decelerationCurve);
         InputManager.Get().Jump += HandleJump;
         InputManager.Get().Move += HandleMove;
         InputManager.Get().Look += HandleLook;
@@ -121,10 +227,22 @@ public class PlatformerController : MonoBehaviour
         Jump();
     }
 
-    private float momentumPercentage = 0;
+    private float t;
 
     private void FixedUpdate()
     {
+        // print("AAAAAAAAAAAAAAAAAAAAAAAAA");
+        //print("TIME:" + accelerationCurve.keys[1].time + "  " + "VALUE:" + accelerationCurve.keys[1].value + "  " + "IN-T:" + accelerationCurve.keys[1].inTangent + "  " + "IN-W:" + accelerationCurve.keys[1].inWeight + "  " + "OUT-T:" + accelerationCurve.keys[1].outTangent + "  " + "OUT-W:" + accelerationCurve.keys[1].outWeight);
+        inverseAccelerationCurve = InverseIncreasingCurve(accelerationCurve);
+        //print("TIME:" + inverseAccelerationCurve.keys[1].time + "  " + "VALUE:" + inverseAccelerationCurve.keys[1].value + "  " + "IN-T:" + inverseAccelerationCurve.keys[1].inTangent + "  " + "IN-W:" + inverseAccelerationCurve.keys[1].inWeight + "  " + "OUT-T:" + inverseAccelerationCurve.keys[1].outTangent + "  " + "OUT-W:" + inverseAccelerationCurve.keys[1].outWeight);
+        
+        // print("AAAAAAAAAAAAAAAAAAAAAAAAA");
+        print("TIME:" + decelerationCurve.keys[0].time + "  " + "VALUE:" + decelerationCurve.keys[0].value + "  " + "IN-T:" + decelerationCurve.keys[0].inTangent + "  " + "IN-W:" + decelerationCurve.keys[0].inWeight + "  " + "OUT-T:" + decelerationCurve.keys[0].outTangent + "  " + "OUT-W:" + decelerationCurve.keys[0].outWeight);
+        inverseDecelerationCurve = InverseDecreasingCurve(decelerationCurve);
+        print("TIME:" + inverseDecelerationCurve.keys[0].time + "  " + "VALUE:" + inverseDecelerationCurve.keys[0].value + "  " + "IN-T:" + inverseDecelerationCurve.keys[0].inTangent + "  " + "IN-W:" + inverseDecelerationCurve.keys[0].inWeight + "  " + "OUT-T:" + inverseDecelerationCurve.keys[0].outTangent + "  " + "OUT-W:" + inverseDecelerationCurve.keys[0].outWeight);
+
+        return;
+        
         //Jumping Logic
         bool wasGrounded = isGrounded;
         isGrounded = Physics2D.BoxCast((Vector2) transform.position + groundCheckPosition, groundCheckSize, 0, Vector2.down, 0, groundMask);
@@ -195,26 +313,26 @@ public class PlatformerController : MonoBehaviour
         velocity.y = Mathf.Max(velocity.y, maxFallSpeed);
 
         //Movement
-        float percentMaxSpeed = Mathf.Abs(velocity.x) / maxSpeed;
-        float targetVelocity = moveInputDirection.x * maxSpeed;
-        bool a = moveInputDirection.x < -0.01f && velocity.x <= 0;
-        bool b = moveInputDirection.x > 0.01f && velocity.x >= 0;
-
-        if (a || b)
+        float percentSpeed = Mathf.Abs(velocity.x) / maxSpeed;
+        bool a = moveInputDirection.x < -0.01f && velocity.x <= 0.1f;
+        bool b = moveInputDirection.x > 0.01f && velocity.x >= -0.1f;
+        if (a || b) //accelerate
         {
             if (isGrounded)
-                momentumPercentage = Mathf.Clamp01(momentumPercentage + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime));
+                percentSpeed = Mathf.Clamp01(inverseAccelerationCurve.Evaluate(percentSpeed) + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime));
             else
-                momentumPercentage = Mathf.Clamp01(momentumPercentage + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime) * inAirAccelerationMultiplier);
-            velocity.x = maxSpeed * accelerationCurve.Evaluate(momentumPercentage) * Mathf.Sign(moveInputDirection.x);
+                percentSpeed = Mathf.Clamp01(inverseAccelerationCurve.Evaluate(percentSpeed) + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime) * inAirAccelerationMultiplier);
+            
+            velocity.x = maxSpeed * accelerationCurve.Evaluate(percentSpeed) * Mathf.Sign(moveInputDirection.x);
         }
         else //decelerate
         {
             if (isGrounded)
-                momentumPercentage = Mathf.Clamp01(momentumPercentage - ((1 / timeToStop) * Time.fixedDeltaTime));
+                percentSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(percentSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime));
             else
-                momentumPercentage = Mathf.Clamp01(momentumPercentage - ((1 / timeToStop) * Time.fixedDeltaTime) * inAirDecelerationMultiplier);
-            velocity.x = maxSpeed * decelerationCurve.Evaluate(1 - momentumPercentage) * Mathf.Sign(velocity.x); //wall bump issue
+                percentSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(percentSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime) * inAirDecelerationMultiplier);
+            
+            velocity.x = maxSpeed * decelerationCurve.Evaluate(1 - percentSpeed) * Mathf.Sign(velocity.x);
         }
         rb.velocity = velocity;
 

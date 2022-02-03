@@ -4966,7 +4966,7 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 10
+  m_Mass: 50
   m_LinearDrag: 0
   m_AngularDrag: 0.05
   m_GravityScale: 1
@@ -5034,8 +5034,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1726947790}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 20, y: 2.6, z: 0}
-  m_LocalScale: {x: 5.5773764, y: 5.5773764, z: 5.5773764}
+  m_LocalPosition: {x: -3.09, y: 8.28, z: 0}
+  m_LocalScale: {x: 7.5853777, y: 7.5853777, z: 7.5853777}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 5
@@ -5894,7 +5894,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d76f2b60f7521b488b41a6119ded02c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxSpeed: 15
+  maxSpeed: 10
   timeToMaxSpeed: 0.5
   timeToStop: 0.2
   inAirAccelerationMultiplier: 0.5
@@ -5905,20 +5905,20 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 0
-      inSlope: 0.08148148
-      outSlope: 0.08148148
+      inSlope: 0
+      outSlope: 1
       tangentMode: 0
       weightedMode: 3
       inWeight: 0
-      outWeight: 0.6818181
+      outWeight: 0.25
     - serializedVersion: 3
       time: 1
       value: 1
-      inSlope: 2.9449725
-      outSlope: 2.9449725
+      inSlope: 1
+      outSlope: 0
       tangentMode: 0
       weightedMode: 3
-      inWeight: 0.14462817
+      inWeight: 0.25
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
@@ -5927,7 +5927,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
-      time: 0
+      time: -1
       value: 1
       inSlope: 0
       outSlope: -1
@@ -5936,7 +5936,7 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0.25
     - serializedVersion: 3
-      time: 1
+      time: 0
       value: 0
       inSlope: -1
       outSlope: 0
@@ -5947,18 +5947,30 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  maxJumpHeight: 6
+  inverseAccelerationCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  inverseDecelerationCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  maxJumpHeight: 5
   timeToJumpApex: 0.5
   maxJumps: 2
-  gravityMultiplier: 2
+  gravityMultiplier: 3
   maxFallSpeed: -50
   coyoteTime: 0.2
   jumpBufferTime: 0.2
   jumpCooldownTime: 0.2
-  groundCheckThickness: 0.1
+  groundCheckThickness: 0.2
   groundMask:
     serializedVersion: 2
-    m_Bits: 1
+    m_Bits: 0
   xpostrail: {fileID: 1998032359}
   xvelrail: {fileID: 1675388496}
 --- !u!96 &2021167710
