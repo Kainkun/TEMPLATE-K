@@ -244,7 +244,10 @@ public class PlatformerController : MonoBehaviour
         
         //Jumping Logic
         bool wasGrounded = isGrounded;
-        isGrounded = Physics2D.BoxCast((Vector2) transform.position + groundCheckPosition, groundCheckSize, 0, Vector2.down, 0, groundMask);
+        if (rb.velocity.y > 0)
+            isGrounded = false;
+        else
+            isGrounded = Physics2D.BoxCast((Vector2) transform.position + groundCheckPosition, groundCheckSize, 0, Vector2.down, 0, groundMask);
 
         if (isGrounded)
         {
