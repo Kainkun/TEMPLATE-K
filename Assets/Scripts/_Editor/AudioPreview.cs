@@ -1,3 +1,5 @@
+#if (UNITY_EDITOR)
+
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -41,3 +43,5 @@ public static class AudioPreview
         Object.DestroyImmediate(o);
     }
 }
+
+#endif
