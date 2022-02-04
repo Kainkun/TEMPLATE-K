@@ -47,8 +47,11 @@ public class PlatformerController : MonoBehaviour
     public LayerMask groundMask = 1;
     private Rigidbody2D _rb;
     private BoxCollider2D _boxCollider;
-    private Vector2 _groundCheckPosition;
+    private float _halfWidth;
+    private float _halfHeight;
     private Vector2 _groundCheckSize;
+    public float cornerCorrectionWidth = 0.1f;
+    public float cornerCorrectionDistance = 1;
     private bool _isGrounded;
 
     [Header("Effects")]
@@ -88,7 +91,8 @@ public class PlatformerController : MonoBehaviour
         inverseDecelerationCurve = AnimCurveUtils.InverseDecreasingCurve(decelerationCurve);
 
         Vector2 size = _boxCollider.size;
-        _groundCheckPosition = new Vector2(0, -size.y / 2);
+        _halfWidth = size.x / 2;
+        _halfHeight = size.y / 2;
         _groundCheckSize = new Vector2(size.x, groundCheckThickness);
 
         _timeSinceJumpPress = jumpCooldownTime;
@@ -99,7 +103,7 @@ public class PlatformerController : MonoBehaviour
         OnAirJump += () => _audioSource.PlayOneShot(airJumpSounds[Random.Range(0,airJumpSounds.Length)], 0.6f);
         OnAirJump += () => Instantiate(airJumpParticles, transform);
         OnLand += () => _audioSource.PlayOneShot(landSounds[Random.Range(0,landSounds.Length)]);
-        OnLand += () => Instantiate(landParticles, transform.position + (Vector3)_groundCheckPosition, quaternion.identity);
+        OnLand += () => Instantiate(landParticles, transform.position - new Vector3(0, _halfHeight, 0), quaternion.identity);
     }
 
     private void OnDestroy()
@@ -177,7 +181,7 @@ public class PlatformerController : MonoBehaviour
         if (_rb.velocity.y > 0)
             _isGrounded = false;
         else
-            _isGrounded = Physics2D.BoxCast((Vector2) transform.position + _groundCheckPosition, _groundCheckSize, 0, Vector2.down, 0, groundMask);
+            _isGrounded = Physics2D.BoxCast((Vector2) transform.position - new Vector2(0, _halfHeight), _groundCheckSize, 0, Vector2.down, 0, groundMask);
 
         if (_isGrounded)
         {
@@ -281,7 +285,10 @@ public class PlatformerController : MonoBehaviour
 
     private void OnDrawGizmos()
     {
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireCube(transform.position + new Vector3(_halfWidth - cornerCorrectionWidth / 2, _halfHeight + cornerCorrectionDistance / 2, 0), new Vector3(cornerCorrectionWidth, cornerCorrectionDistance, 0));
+        Gizmos.DrawWireCube(transform.position + new Vector3(-_halfWidth + cornerCorrectionWidth / 2, _halfHeight + cornerCorrectionDistance / 2, 0), new Vector3(cornerCorrectionWidth, cornerCorrectionDistance, 0));
         Gizmos.color = Color.red;
-        Gizmos.DrawWireCube(transform.position + (Vector3) _groundCheckPosition, _groundCheckSize);
+        Gizmos.DrawWireCube(transform.position - new Vector3(0, _halfHeight, 0), _groundCheckSize);
     }
 }

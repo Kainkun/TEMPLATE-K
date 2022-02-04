@@ -6101,6 +6101,8 @@ MonoBehaviour:
   groundMask:
     serializedVersion: 2
     m_Bits: 1
+  cornerCorrectionWidth: 0.1
+  cornerCorrectionDistance: 1
   airJumpParticles: {fileID: 7366839644063284373, guid: 90234006e46f6b549b2d5c1cb62dacc0, type: 3}
   groundJumpParticles: {fileID: 7059679902456677018, guid: 0b3e6167e22e8944fa7503e49bcf25ca, type: 3}
   landParticles: {fileID: 8160101668953125207, guid: 83f166a78dbcc5a4aa2862f9f5ec1703, type: 3}
