@@ -1,11 +1,9 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Net;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.InputSystem;
+using Random = UnityEngine.Random;
 
+[RequireComponent( typeof(Rigidbody2D), typeof(BoxCollider2D), typeof(AudioSource) )]
 public class PlatformerController : MonoBehaviour
 {
     [Header("Movement")]
@@ -14,62 +12,94 @@ public class PlatformerController : MonoBehaviour
     public float timeToStop = 0.2f;
     public float inAirAccelerationMultiplier = 0.5f;
     public float inAirDecelerationMultiplier = 0.5f;
-    private Vector2 moveInputDirection;
+    private Vector2 _moveInputDirection;
+    public AnimationCurve accelerationCurve = new AnimationCurve(new Keyframe(0, 0,0,1, 0,0.25f), new Keyframe(1, 1, 1, 0, 0.25f, 0));
+    public AnimationCurve decelerationCurve = new AnimationCurve(new Keyframe(-1, 1,0,-1, 0,0.25f), new Keyframe(0, 0, -1, 0, 0.25f, 0));
+    public AnimationCurve inverseAccelerationCurve;
+    public AnimationCurve inverseDecelerationCurve;
 
     [Header("Jumping")]
-    public float maxJumpHeight = 6;
+    public float maxJumpHeight = 5;
     public float timeToJumpApex = 0.5f;
     public int maxJumps = 2;
-    private int availableJumps;
-    private bool fastFall;
-    public float gravityMultiplier = 2;
+    private int _availableJumps;
+    private bool _fastFall;
+    public float gravityMultiplier = 3;
     public float maxFallSpeed = -50;
 
-    public float coyoteTime = 0.2f;
-    private bool isCoyoteTime;
-    private float timeSinceLeftGround;
+    public float coyoteTime = 0.1f;
+    private bool _isCoyoteTime;
+    private float _timeSinceLeftGround;
 
-    public float jumpBufferTime = 0.2f;
-    private bool waitingForJump;
-    private float timeSinceJumpPress;
+    public float jumpBufferTime = 0.1f;
+    private bool _waitingForJump;
+    private float _timeSinceJumpPress;
 
     public float jumpCooldownTime = 0.2f;
-    private bool jumpInCooldown;
-    private float timeSinceLastJump;
+    private bool _jumpInCooldown;
+    private float _timeSinceLastJump;
 
-    private bool inAirFromJumping;
-    private bool inAirFromFalling;
+    private bool _inAirFromJumping;
+    private bool _inAirFromFalling;
 
     [Header("Physics")]
     public float groundCheckThickness = 0.1f;
     public LayerMask groundMask = 1;
-    private Rigidbody2D rb;
-    private BoxCollider2D collider;
-    private Vector2 groundCheckPosition;
-    private Vector2 groundCheckSize;
-    private bool isGrounded;
+    private Rigidbody2D _rb;
+    private BoxCollider2D _boxCollider;
+    private Vector2 _groundCheckPosition;
+    private Vector2 _groundCheckSize;
+    private bool _isGrounded;
 
+    [Header("Effects")]
+    public GameObject airJumpParticles;
+    public GameObject groundJumpParticles;
+    public GameObject landParticles;
+
+    [Header("Audio")]
+    public AudioClip[] groundJumpSounds;
+    public AudioClip[] airJumpSounds;
+    public AudioClip[] landSounds;
+    private AudioSource _audioSource;
+    
     [Header("Other")]
     public Transform xpostrail;
     public Transform xvelrail;
 
+
+    public event Action OnJump;
+    public event Action OnGroundJump;
+    public event Action OnAirJump;
+    public event Action OnLand;
 
     private void Start()
     {
         InputManager.Get().Jump += HandleJump;
         InputManager.Get().Move += HandleMove;
         InputManager.Get().Look += HandleLook;
+        
+        _rb = GetComponent<Rigidbody2D>();
+        _boxCollider = GetComponent<BoxCollider2D>();
+        _audioSource = GetComponent<AudioSource>();
+        
+        _availableJumps = maxJumps;
+        
+        inverseAccelerationCurve = AnimCurveUtils.InverseIncreasingCurve(accelerationCurve);
+        inverseDecelerationCurve = AnimCurveUtils.InverseDecreasingCurve(decelerationCurve);
 
-        availableJumps = maxJumps;
+        Vector2 size = _boxCollider.size;
+        _groundCheckPosition = new Vector2(0, -size.y / 2);
+        _groundCheckSize = new Vector2(size.x, groundCheckThickness);
 
-        rb = GetComponent<Rigidbody2D>();
-        collider = GetComponent<BoxCollider2D>();
+        _timeSinceJumpPress = jumpCooldownTime;
+        _timeSinceLastJump = jumpCooldownTime;
 
-        groundCheckPosition = new Vector2(0, -collider.size.y / 2);
-        groundCheckSize = new Vector2(collider.size.x, groundCheckThickness);
-
-        timeSinceJumpPress = jumpCooldownTime;
-        timeSinceLastJump = jumpCooldownTime;
+        OnGroundJump += () => _audioSource.PlayOneShot(groundJumpSounds[Random.Range(0,groundJumpSounds.Length)], 0.4f);
+        OnGroundJump += () => Instantiate(groundJumpParticles, transform);
+        OnAirJump += () => _audioSource.PlayOneShot(airJumpSounds[Random.Range(0,airJumpSounds.Length)], 0.6f);
+        OnAirJump += () => Instantiate(airJumpParticles, transform);
+        OnLand += () => _audioSource.PlayOneShot(landSounds[Random.Range(0,landSounds.Length)]);
+        OnLand += () => Instantiate(landParticles, transform.position + (Vector3)_groundCheckPosition, quaternion.identity);
     }
 
     private void OnDestroy()
@@ -82,148 +112,176 @@ public class PlatformerController : MonoBehaviour
     }
 
 
-    public void HandleMove(Vector2 value)
+    private void HandleMove(Vector2 value)
     {
-        moveInputDirection = value;
+        _moveInputDirection = value;
     }
 
-    public void HandleLook(Vector2 value)
+    private void HandleLook(Vector2 value)
     {
         //print(value);
     }
 
-    public void HandleJump(float value)
+    private bool _jumpButtonHolding;
+
+    private void HandleJump(float value)
     {
         if (value > 0)
-            timeSinceJumpPress = 0;
+        {
+            _jumpButtonHolding = true;
+            _timeSinceJumpPress = 0;
+        }
         else
-            fastFall = true;
+        {
+            _jumpButtonHolding = false;
+            _fastFall = true;
+        }
     }
 
 
-    public void Jump()
+    private void Jump()
     {
-        Vector2 velocity = rb.velocity;
+        Vector2 velocity = _rb.velocity;
         velocity.y = (2 * maxJumpHeight) / timeToJumpApex;
-        rb.velocity = velocity;
+        _rb.velocity = velocity;
 
-        fastFall = false;
-        inAirFromJumping = true;
-        inAirFromFalling = false;
-        timeSinceLastJump = 0;
+        _fastFall = !_jumpButtonHolding;
+        _inAirFromJumping = true;
+        _inAirFromFalling = false;
+        _timeSinceLastJump = 0;
+        OnJump?.Invoke();
     }
 
-    public void AirJump()
+    private void GroundJump()
     {
-        availableJumps--;
         Jump();
+        OnGroundJump?.Invoke();
     }
 
-    private void Update()
+    private void AirJump()
+    {
+        _availableJumps--;
+        Jump();
+        OnAirJump?.Invoke();
+    }
+
+    public PlatformerController(AudioSource audioSource)
+    {
+        this._audioSource = audioSource;
+    }
+
+    private void FixedUpdate()
     {
         //Jumping Logic
-        bool wasGrounded = isGrounded;
-        isGrounded = Physics2D.BoxCast((Vector2) transform.position + groundCheckPosition, groundCheckSize, 0, Vector2.down, 0, groundMask);
+        bool wasGrounded = _isGrounded;
+        if (_rb.velocity.y > 0)
+            _isGrounded = false;
+        else
+            _isGrounded = Physics2D.BoxCast((Vector2) transform.position + _groundCheckPosition, _groundCheckSize, 0, Vector2.down, 0, groundMask);
 
-        if (isGrounded)
+        if (_isGrounded)
         {
-            fastFall = true;
-            timeSinceLeftGround = 0;
-            inAirFromJumping = false;
-            inAirFromFalling = false;
-            availableJumps = maxJumps;
+
         }
 
         //first frame landing on ground
-        if (!wasGrounded && isGrounded)
+        if (!wasGrounded && _isGrounded)
         {
-            
+            _fastFall = true;
+            _timeSinceLeftGround = 0;
+            _inAirFromJumping = false;
+            _inAirFromFalling = false;
+            _availableJumps = maxJumps;
+            OnLand?.Invoke();
         }
 
         //first frame leaving ground
-        if (wasGrounded && !isGrounded)
+        if (wasGrounded && !_isGrounded)
         {
-            availableJumps--;
+            _availableJumps--;
 
-            if (jumpInCooldown)
+            if (_jumpInCooldown)
             {
-                inAirFromJumping = true;
-                fastFall = false;
+                _inAirFromJumping = true;
             }
             else
-                inAirFromFalling = true;
+                _inAirFromFalling = true;
         }
 
-        if (waitingForJump && !jumpInCooldown)
+        if (_waitingForJump && !_jumpInCooldown)
         {
-            if (isGrounded || isCoyoteTime)
-                Jump();
-            else if (availableJumps > 0)
+            if (_isGrounded || _isCoyoteTime)
+                GroundJump();
+            else if (_availableJumps > 0)
                 AirJump();
         }
 
-        if (inAirFromFalling)
+        if (_inAirFromFalling)
         {
-            timeSinceLeftGround += Time.deltaTime;
-            isCoyoteTime = timeSinceLeftGround < coyoteTime;
+            _timeSinceLeftGround += Time.fixedDeltaTime;
+            _isCoyoteTime = _timeSinceLeftGround < coyoteTime;
         }
         else
         {
-            isCoyoteTime = false;
+            _isCoyoteTime = false;
         }
 
-        timeSinceJumpPress += Time.deltaTime;
-        waitingForJump = timeSinceJumpPress < jumpBufferTime;
+        _timeSinceJumpPress += Time.fixedDeltaTime;
+        _waitingForJump = _timeSinceJumpPress < jumpBufferTime;
 
-        timeSinceLastJump += Time.deltaTime;
-        jumpInCooldown = timeSinceLastJump < jumpCooldownTime;
+        _timeSinceLastJump += Time.fixedDeltaTime;
+        _jumpInCooldown = _timeSinceLastJump < jumpCooldownTime;
 
 
-        Vector2 velocity = rb.velocity;
+        Vector2 velocity = _rb.velocity;
 
         //Gravity
         if (velocity.y < 0)
-            fastFall = true;
-        float gravity = (-2 * maxJumpHeight) / Mathf.Pow(timeToJumpApex, 2) * Time.deltaTime;
-        if (fastFall)
+            _fastFall = true;
+        float gravity = (-2 * maxJumpHeight) / Mathf.Pow(timeToJumpApex, 2) * Time.fixedDeltaTime;
+        if (_fastFall)
             gravity *= gravityMultiplier;
         velocity.y += gravity;
         velocity.y = Mathf.Max(velocity.y, maxFallSpeed);
 
         //Movement
-        float targetVelocity = moveInputDirection.x * maxSpeed;
-        bool a = moveInputDirection.x < -0.01f && velocity.x <= 0;
-        bool b = moveInputDirection.x > 0.01f && velocity.x >= 0;
-        if (a || b)
+        float percentSpeed = Mathf.Abs(velocity.x) / maxSpeed;
+        bool a = _moveInputDirection.x < -0.01f && velocity.x <= 0.1f;
+        bool b = _moveInputDirection.x > 0.01f && velocity.x >= -0.1f;
+        if (a || b) //accelerate
         {
-            if (isGrounded)
-                velocity.x = Mathf.MoveTowards(velocity.x, targetVelocity, maxSpeed * (1 / timeToMaxSpeed) * Time.deltaTime);
+            if (_isGrounded)
+                percentSpeed = Mathf.Clamp01(inverseAccelerationCurve.Evaluate(percentSpeed) + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime));
             else
-                velocity.x = Mathf.MoveTowards(velocity.x, targetVelocity, maxSpeed * (1 / timeToMaxSpeed) * Time.deltaTime * inAirAccelerationMultiplier);
+                percentSpeed = Mathf.Clamp01(inverseAccelerationCurve.Evaluate(percentSpeed) + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime) * inAirAccelerationMultiplier);
+            
+            velocity.x = maxSpeed * accelerationCurve.Evaluate(percentSpeed) * Mathf.Sign(_moveInputDirection.x);
         }
-        else
+        else //decelerate
         {
-            if (isGrounded)
-                velocity.x = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStop) * Time.deltaTime);
+            if (_isGrounded)
+                percentSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(-percentSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime));
             else
-                velocity.x = Mathf.MoveTowards(velocity.x, 0, maxSpeed * (1 / timeToStop) * Time.deltaTime * inAirDecelerationMultiplier);
+                percentSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(-percentSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime) * inAirDecelerationMultiplier);
+            
+            velocity.x = maxSpeed * decelerationCurve.Evaluate(-percentSpeed) * Mathf.Sign(velocity.x);
         }
-        rb.velocity = velocity;
+        _rb.velocity = velocity;
 
-
+        //Debug trails
         Vector2 v = xpostrail.position;
-        v.x += Time.deltaTime;
+        v.x += Time.fixedDeltaTime;
         v.y = transform.position.x;
         xpostrail.position = v;
         v = xvelrail.position;
-        v.x += Time.deltaTime;
-        v.y = rb.velocity.x;
+        v.x += Time.fixedDeltaTime;
+        v.y = _rb.velocity.x;
         xvelrail.position = v;
     }
 
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
-        Gizmos.DrawWireCube(transform.position + (Vector3) groundCheckPosition, groundCheckSize);
+        Gizmos.DrawWireCube(transform.position + (Vector3) _groundCheckPosition, _groundCheckSize);
     }
 }
