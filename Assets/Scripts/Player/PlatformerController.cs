@@ -1,15 +1,15 @@
 using System;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Events;
 using Random = UnityEngine.Random;
 
-[RequireComponent( typeof(Rigidbody2D), typeof(BoxCollider2D), typeof(AudioSource) )]
 public class PlatformerController : MonoBehaviour
 {
     [Header("Movement")]
     public float maxSpeed = 15;
-    public float timeToMaxSpeed = 0.5f;
-    public float timeToStop = 0.2f;
+    public float timeToMaxSpeed = 0.2f;
+    public float timeToStop = 0.1f;
     public float inAirAccelerationMultiplier = 0.5f;
     public float inAirDecelerationMultiplier = 0.5f;
     private Vector2 _moveInputDirection;
@@ -21,11 +21,11 @@ public class PlatformerController : MonoBehaviour
 
     [Header("Jumping")]
     public float maxJumpHeight = 5;
-    public float timeToJumpApex = 0.5f;
+    public float timeToJumpApex = 0.4f;
     public int maxJumps = 2;
     private int _availableJumps;
     private bool _fastFall;
-    public float gravityMultiplier = 3;
+    public float gravityMultiplier = 2;
     public float maxFallSpeed = -50;
 
     public float coyoteTime = 0.1f;
@@ -36,7 +36,7 @@ public class PlatformerController : MonoBehaviour
     private bool _waitingForJump;
     private float _timeSinceJumpPress;
 
-    public float jumpCooldownTime = 0.2f;
+    public float jumpCooldownTime = 0.1f;
     private bool _jumpInCooldown;
     private float _timeSinceLastJump;
 
@@ -51,15 +51,20 @@ public class PlatformerController : MonoBehaviour
     private float _halfWidth;
     private float _halfHeight;
     private Vector2 _groundCheckSize;
+    private float _timeOnGround;
     [Range(0,0.99f)]
-    public float cornerCorrectionWidthPercent = 0.1f;
+    public float cornerCorrectionWidthPercent = 0.5f;
     private float _cornerCorrectionWidth;
     private bool _isGrounded;
+    private bool _wasGrounded;
 
     [Header("Effects")]
     public GameObject airJumpParticles;
     public GameObject groundJumpParticles;
     public GameObject landParticles;
+    private SpriteRenderer _spriteRenderer;
+    private Transform _spriteRendererPivot;
+    private Animator _animator;
 
     [Header("Audio")]
     public AudioClip[] groundJumpSounds;
@@ -72,16 +77,20 @@ public class PlatformerController : MonoBehaviour
     public Transform xvelrail;
 
 
-    public event Action OnJump;
-    public event Action OnGroundJump;
-    public event Action OnAirJump;
-    public event Action OnLand;
+    public UnityEvent OnJump;
+    public UnityEvent OnGroundJump;
+    public UnityEvent OnAirJump;
+    public UnityEvent OnLeaveGround;
+    public UnityEvent OnLand;
 
     void GetComponents()
     {
         _rb = GetComponent<Rigidbody2D>();
         _boxCollider = GetComponent<BoxCollider2D>();
         _audioSource = GetComponent<AudioSource>();
+        _animator = GetComponentInChildren<Animator>();
+        _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        _spriteRendererPivot = _spriteRenderer.transform.parent;
     }
 
     void SetStartingVariables()
@@ -96,8 +105,20 @@ public class PlatformerController : MonoBehaviour
         inverseDecelerationCurve = AnimCurveUtils.InverseDecreasingCurve(decelerationCurve);
 
         _availableJumps = maxJumps;
-        _timeSinceJumpPress = jumpCooldownTime;
-        _timeSinceLastJump = jumpCooldownTime;
+        _timeSinceJumpPress = Mathf.Infinity;
+        _timeSinceLastJump = Mathf.Infinity;
+        _fastFall = true;
+        
+        if (CheckIfGrounded())
+        {
+            _isGrounded = true;
+            _wasGrounded = true;
+            _timeOnGround = Mathf.Infinity;
+        }
+        else
+        {
+            _timeSinceLeftGround = Mathf.Infinity;
+        }
     }
 
     private void OnValidate()
@@ -106,22 +127,28 @@ public class PlatformerController : MonoBehaviour
         SetStartingVariables();
     }
 
-    private void Start()
+    private void Awake()
     {
         GetComponents();
         SetStartingVariables();
-        
+
+        OnLeaveGround.AddListener(() => _animator.Play("Stretch"));
+        OnGroundJump.AddListener(() => _audioSource.PlayOneShot(groundJumpSounds[Random.Range(0,groundJumpSounds.Length)], 0.4f));
+        OnGroundJump.AddListener(() => Instantiate(groundJumpParticles, transform));
+        OnAirJump.AddListener(() => _audioSource.PlayOneShot(airJumpSounds[Random.Range(0,airJumpSounds.Length)], 0.6f));
+        OnAirJump.AddListener(() => Instantiate(airJumpParticles, transform));
+        OnLand.AddListener(() => _audioSource.PlayOneShot(landSounds[Random.Range(0,landSounds.Length)]));
+        OnLand.AddListener(() => Instantiate(landParticles, transform.position - new Vector3(0, _halfHeight, 0), quaternion.identity));
+        OnLand.AddListener(() => _animator.Play("Squash"));
+    }
+
+    private void Start()
+    {
         InputManager.Get().Jump += HandleJump;
         InputManager.Get().Move += HandleMove;
         InputManager.Get().Look += HandleLook;
-
-        OnGroundJump += () => _audioSource.PlayOneShot(groundJumpSounds[Random.Range(0,groundJumpSounds.Length)], 0.4f);
-        OnGroundJump += () => Instantiate(groundJumpParticles, transform);
-        OnAirJump += () => _audioSource.PlayOneShot(airJumpSounds[Random.Range(0,airJumpSounds.Length)], 0.6f);
-        OnAirJump += () => Instantiate(airJumpParticles, transform);
-        OnLand += () => _audioSource.PlayOneShot(landSounds[Random.Range(0,landSounds.Length)]);
-        OnLand += () => Instantiate(landParticles, transform.position - new Vector3(0, _halfHeight, 0), quaternion.identity);
     }
+
 
     private void OnDestroy()
     {
@@ -186,27 +213,25 @@ public class PlatformerController : MonoBehaviour
         OnAirJump?.Invoke();
     }
 
-    public PlatformerController(AudioSource audioSource)
-    {
-        this._audioSource = audioSource;
-    }
+    
+    private bool CheckIfGrounded() => Physics2D.BoxCast((Vector2) transform.position - new Vector2(0, _halfHeight), _groundCheckSize, 0, Vector2.down, 0, traversableMask);
 
     private void FixedUpdate()
     {
         //Jumping Logic
-        bool wasGrounded = _isGrounded;
+        _wasGrounded = _isGrounded;
         if (_rb.velocity.y > 0)
             _isGrounded = false;
         else
-            _isGrounded = Physics2D.BoxCast((Vector2) transform.position - new Vector2(0, _halfHeight), _groundCheckSize, 0, Vector2.down, 0, traversableMask);
+            _isGrounded = CheckIfGrounded();
 
         if (_isGrounded)
         {
-
+            _timeOnGround += Time.fixedDeltaTime;
         }
 
         //first frame landing on ground
-        if (!wasGrounded && _isGrounded)
+        if (!_wasGrounded && _isGrounded)
         {
             _fastFall = true;
             _timeSinceLeftGround = 0;
@@ -217,16 +242,17 @@ public class PlatformerController : MonoBehaviour
         }
 
         //first frame leaving ground
-        if (wasGrounded && !_isGrounded)
+        if (_wasGrounded && !_isGrounded)
         {
+            _timeOnGround = 0;
             _availableJumps--;
 
             if (_jumpInCooldown)
-            {
                 _inAirFromJumping = true;
-            }
             else
                 _inAirFromFalling = true;
+            
+            OnLeaveGround.Invoke();
         }
 
         if (_waitingForJump && !_jumpInCooldown)
@@ -310,9 +336,6 @@ public class PlatformerController : MonoBehaviour
                     transform.position += Vector3.left * ((_halfWidth - rightHitDist.distance) + 0.01f);
             }
         }
-
-        
-        
 
         //Debug trails
         Vector2 v = xpostrail.position;

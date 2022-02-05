@@ -9,11 +9,15 @@ public class InputManager : SystemSingleton<InputManager>
 {
     private PlayerInput playerInput;
 
+    protected override void Awake()
+    {
+        base.Awake();
+        DontDestroyOnLoad(transform.gameObject);
+        playerInput = GetComponent<PlayerInput>();
+    }
+
     private void Start()
     {
-        DontDestroyOnLoad(transform.gameObject);
-        
-        playerInput = GetComponent<PlayerInput>();
         SceneManager.sceneLoaded += HandleLoadScene;
     }
 
