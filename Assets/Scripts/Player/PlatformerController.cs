@@ -17,6 +17,7 @@ public class PlatformerController : MonoBehaviour
     public AnimationCurve decelerationCurve = new AnimationCurve(new Keyframe(-1, 1,0,-1, 0,0.25f), new Keyframe(0, 0, -1, 0, 0.25f, 0));
     public AnimationCurve inverseAccelerationCurve;
     public AnimationCurve inverseDecelerationCurve;
+    private Vector2 _velocity;
 
     [Header("Jumping")]
     public float maxJumpHeight = 5;
@@ -44,14 +45,15 @@ public class PlatformerController : MonoBehaviour
 
     [Header("Physics")]
     public float groundCheckThickness = 0.1f;
-    public LayerMask groundMask = 1;
+    public LayerMask traversableMask = 1;
     private Rigidbody2D _rb;
     private BoxCollider2D _boxCollider;
     private float _halfWidth;
     private float _halfHeight;
     private Vector2 _groundCheckSize;
-    public float cornerCorrectionWidth = 0.1f;
-    public float cornerCorrectionDistance = 1;
+    [Range(0,0.99f)]
+    public float cornerCorrectionWidthPercent = 0.1f;
+    private float _cornerCorrectionWidth;
     private bool _isGrounded;
 
     [Header("Effects")]
@@ -75,28 +77,43 @@ public class PlatformerController : MonoBehaviour
     public event Action OnAirJump;
     public event Action OnLand;
 
-    private void Start()
+    void GetComponents()
     {
-        InputManager.Get().Jump += HandleJump;
-        InputManager.Get().Move += HandleMove;
-        InputManager.Get().Look += HandleLook;
-        
         _rb = GetComponent<Rigidbody2D>();
         _boxCollider = GetComponent<BoxCollider2D>();
         _audioSource = GetComponent<AudioSource>();
-        
-        _availableJumps = maxJumps;
-        
-        inverseAccelerationCurve = AnimCurveUtils.InverseIncreasingCurve(accelerationCurve);
-        inverseDecelerationCurve = AnimCurveUtils.InverseDecreasingCurve(decelerationCurve);
+    }
 
+    void SetStartingVariables()
+    {
         Vector2 size = _boxCollider.size;
         _halfWidth = size.x / 2;
         _halfHeight = size.y / 2;
         _groundCheckSize = new Vector2(size.x, groundCheckThickness);
+        _cornerCorrectionWidth = _halfWidth * cornerCorrectionWidthPercent;
+        
+        inverseAccelerationCurve = AnimCurveUtils.InverseIncreasingCurve(accelerationCurve);
+        inverseDecelerationCurve = AnimCurveUtils.InverseDecreasingCurve(decelerationCurve);
 
+        _availableJumps = maxJumps;
         _timeSinceJumpPress = jumpCooldownTime;
         _timeSinceLastJump = jumpCooldownTime;
+    }
+
+    private void OnValidate()
+    {
+        GetComponents();
+        SetStartingVariables();
+    }
+
+    private void Start()
+    {
+        GetComponents();
+        SetStartingVariables();
+        
+        InputManager.Get().Jump += HandleJump;
+        InputManager.Get().Move += HandleMove;
+        InputManager.Get().Look += HandleLook;
 
         OnGroundJump += () => _audioSource.PlayOneShot(groundJumpSounds[Random.Range(0,groundJumpSounds.Length)], 0.4f);
         OnGroundJump += () => Instantiate(groundJumpParticles, transform);
@@ -181,7 +198,7 @@ public class PlatformerController : MonoBehaviour
         if (_rb.velocity.y > 0)
             _isGrounded = false;
         else
-            _isGrounded = Physics2D.BoxCast((Vector2) transform.position - new Vector2(0, _halfHeight), _groundCheckSize, 0, Vector2.down, 0, groundMask);
+            _isGrounded = Physics2D.BoxCast((Vector2) transform.position - new Vector2(0, _halfHeight), _groundCheckSize, 0, Vector2.down, 0, traversableMask);
 
         if (_isGrounded)
         {
@@ -237,21 +254,21 @@ public class PlatformerController : MonoBehaviour
         _jumpInCooldown = _timeSinceLastJump < jumpCooldownTime;
 
 
-        Vector2 velocity = _rb.velocity;
+        _velocity = _rb.velocity;
 
         //Gravity
-        if (velocity.y < 0)
+        if (_velocity.y < 0)
             _fastFall = true;
         float gravity = (-2 * maxJumpHeight) / Mathf.Pow(timeToJumpApex, 2) * Time.fixedDeltaTime;
         if (_fastFall)
             gravity *= gravityMultiplier;
-        velocity.y += gravity;
-        velocity.y = Mathf.Max(velocity.y, maxFallSpeed);
+        _velocity.y += gravity;
+        _velocity.y = Mathf.Max(_velocity.y, maxFallSpeed);
 
         //Movement
-        float percentSpeed = Mathf.Abs(velocity.x) / maxSpeed;
-        bool a = _moveInputDirection.x < -0.01f && velocity.x <= 0.1f;
-        bool b = _moveInputDirection.x > 0.01f && velocity.x >= -0.1f;
+        float percentSpeed = Mathf.Abs(_velocity.x) / maxSpeed;
+        bool a = _moveInputDirection.x < -0.01f && _velocity.x <= 0.1f;
+        bool b = _moveInputDirection.x > 0.01f && _velocity.x >= -0.1f;
         if (a || b) //accelerate
         {
             if (_isGrounded)
@@ -259,7 +276,7 @@ public class PlatformerController : MonoBehaviour
             else
                 percentSpeed = Mathf.Clamp01(inverseAccelerationCurve.Evaluate(percentSpeed) + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime) * inAirAccelerationMultiplier);
             
-            velocity.x = maxSpeed * accelerationCurve.Evaluate(percentSpeed) * Mathf.Sign(_moveInputDirection.x);
+            _velocity.x = maxSpeed * accelerationCurve.Evaluate(percentSpeed) * Mathf.Sign(_moveInputDirection.x);
         }
         else //decelerate
         {
@@ -268,9 +285,34 @@ public class PlatformerController : MonoBehaviour
             else
                 percentSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(-percentSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime) * inAirDecelerationMultiplier);
             
-            velocity.x = maxSpeed * decelerationCurve.Evaluate(-percentSpeed) * Mathf.Sign(velocity.x);
+            _velocity.x = maxSpeed * decelerationCurve.Evaluate(-percentSpeed) * Mathf.Sign(_velocity.x);
         }
-        _rb.velocity = velocity;
+        _rb.velocity = _velocity;
+        
+        //Corner Correction
+        if(_velocity.y > 0)
+        {
+            Vector2 rightOrigin = (Vector2) transform.position + new Vector2(_halfWidth, _halfHeight);
+            Vector2 leftOrigin = (Vector2) transform.position + new Vector2(-_halfWidth, _halfHeight);
+            RaycastHit2D rightHit = Physics2D.Raycast(rightOrigin, Vector2.up, _velocity.y * Time.fixedDeltaTime * 2, traversableMask);
+            RaycastHit2D leftHit = Physics2D.Raycast(leftOrigin, Vector2.up, _velocity.y * Time.fixedDeltaTime * 2, traversableMask);
+
+            if (leftHit && !rightHit)
+            {
+                RaycastHit2D leftHitDist = Physics2D.Raycast(new Vector2(transform.position.x, leftHit.point.y + 0.01f), Vector2.left, _halfWidth, traversableMask);
+                if (leftHitDist && leftHitDist.distance >= _halfWidth - _cornerCorrectionWidth)
+                    transform.position += Vector3.right * ((_halfWidth - leftHitDist.distance) + 0.01f);
+            }
+            else if (rightHit && !leftHit)
+            {
+                RaycastHit2D rightHitDist = Physics2D.Raycast(new Vector2(transform.position.x, rightHit.point.y + 0.01f), Vector2.right, _halfWidth, traversableMask);
+                if (rightHitDist && rightHitDist.distance >= _halfWidth - _cornerCorrectionWidth)
+                    transform.position += Vector3.left * ((_halfWidth - rightHitDist.distance) + 0.01f);
+            }
+        }
+
+        
+        
 
         //Debug trails
         Vector2 v = xpostrail.position;
@@ -285,10 +327,13 @@ public class PlatformerController : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireCube(transform.position + new Vector3(_halfWidth - cornerCorrectionWidth / 2, _halfHeight + cornerCorrectionDistance / 2, 0), new Vector3(cornerCorrectionWidth, cornerCorrectionDistance, 0));
-        Gizmos.DrawWireCube(transform.position + new Vector3(-_halfWidth + cornerCorrectionWidth / 2, _halfHeight + cornerCorrectionDistance / 2, 0), new Vector3(cornerCorrectionWidth, cornerCorrectionDistance, 0));
+        if (!Application.isPlaying)
+            _velocity = new Vector2(0, 20f);
+        
         Gizmos.color = Color.red;
+        Gizmos.DrawWireCube(transform.position + new Vector3(_halfWidth - _cornerCorrectionWidth / 2, _halfHeight + _velocity.y * Time.fixedDeltaTime, 0), new Vector3(_cornerCorrectionWidth, _velocity.y * Time.fixedDeltaTime * 2, 0));
+        Gizmos.DrawWireCube(transform.position + new Vector3(-_halfWidth + _cornerCorrectionWidth / 2, _halfHeight + _velocity.y * Time.fixedDeltaTime, 0), new Vector3(_cornerCorrectionWidth, _velocity.y * Time.fixedDeltaTime * 2, 0));
+        
         Gizmos.DrawWireCube(transform.position - new Vector3(0, _halfHeight, 0), _groundCheckSize);
     }
 }

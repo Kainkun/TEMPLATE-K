@@ -4472,8 +4472,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1613608354}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -7.32, y: -0.47, z: 0}
-  m_LocalScale: {x: -3.0519905, y: 1, z: 1}
+  m_LocalPosition: {x: -7.5, y: -0.5, z: 0}
+  m_LocalScale: {x: 3, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 10
@@ -6079,13 +6079,49 @@ MonoBehaviour:
     m_RotationOrder: 4
   inverseAccelerationCurve:
     serializedVersion: 2
-    m_Curve: []
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0.0108346725
+      outSlope: 0.0108346725
+      tangentMode: 0
+      weightedMode: 3
+      inWeight: 0
+      outWeight: 0.51851845
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 27.303211
+      outSlope: 27.303211
+      tangentMode: 0
+      weightedMode: 3
+      inWeight: 0.018518627
+      outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
   inverseDecelerationCurve:
     serializedVersion: 2
-    m_Curve: []
+    m_Curve:
+    - serializedVersion: 3
+      time: -1
+      value: 1
+      inSlope: -16.017927
+      outSlope: -16.017927
+      tangentMode: 0
+      weightedMode: 3
+      inWeight: 0
+      outWeight: 0.030864298
+    - serializedVersion: 3
+      time: -0
+      value: -0
+      inSlope: -0.076756306
+      outSlope: -0.076756306
+      tangentMode: 0
+      weightedMode: 3
+      inWeight: 0.5123456
+      outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
@@ -6098,11 +6134,10 @@ MonoBehaviour:
   jumpBufferTime: 0.1
   jumpCooldownTime: 0.2
   groundCheckThickness: 0.1
-  groundMask:
+  traversableMask:
     serializedVersion: 2
     m_Bits: 1
-  cornerCorrectionWidth: 0.1
-  cornerCorrectionDistance: 1
+  cornerCorrectionWidthPercent: 0.601
   airJumpParticles: {fileID: 7366839644063284373, guid: 90234006e46f6b549b2d5c1cb62dacc0, type: 3}
   groundJumpParticles: {fileID: 7059679902456677018, guid: 0b3e6167e22e8944fa7503e49bcf25ca, type: 3}
   landParticles: {fileID: 8160101668953125207, guid: 83f166a78dbcc5a4aa2862f9f5ec1703, type: 3}
