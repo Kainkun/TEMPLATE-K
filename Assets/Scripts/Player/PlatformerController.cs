@@ -2,6 +2,7 @@ using System;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.PlayerLoop;
 using Random = UnityEngine.Random;
 
 public class PlatformerController : MonoBehaviour
@@ -36,7 +37,7 @@ public class PlatformerController : MonoBehaviour
     private bool _waitingForJump;
     private float _timeSinceJumpPress;
 
-    public float jumpCooldownTime = 0.1f;
+    public float jumpCooldownTime = 0.1f; //JUMP MUST ESCAPE GROUNDED BOXCAST BEFORE COOLDOWN FINISHES
     private bool _jumpInCooldown;
     private float _timeSinceLastJump;
 
@@ -62,6 +63,7 @@ public class PlatformerController : MonoBehaviour
     private float _horizontalCornerCorrectionHeight;
     private bool _isGrounded;
     private bool _wasGrounded;
+    private float _groundedDistance;
 
     [Header("Effects")]
     public GameObject airJumpParticles;
@@ -103,7 +105,7 @@ public class PlatformerController : MonoBehaviour
         _size = _boxCollider.size;
         _halfWidth = _size.x / 2;
         _halfHeight = _size.y / 2;
-        _groundCheckSize = new Vector2(_size.x, groundCheckThickness);
+        _groundCheckSize = new Vector2(_size.x, 0.001f);
         _verticalCornerCorrectionWidth = _halfWidth * verticalCornerCorrectionWidthPercent;
         _horizontalCornerCorrectionHeight = _size.y * horizontalCornerCorrectionHeightPercent;
         
@@ -118,9 +120,8 @@ public class PlatformerController : MonoBehaviour
         _timeSinceLastJump = Mathf.Infinity;
         _fastFall = true;
         
-        if (CheckIfGrounded())
+        if (CheckIfGrounded(out _isGrounded, out _groundedDistance))
         {
-            _isGrounded = true;
             _wasGrounded = true;
             _timeOnGround = Mathf.Infinity;
         }
@@ -223,16 +224,27 @@ public class PlatformerController : MonoBehaviour
     }
 
     
-    private bool CheckIfGrounded() => Physics2D.BoxCast((Vector2) transform.position - new Vector2(0, _halfHeight), _groundCheckSize, 0, Vector2.down, 0, _traversableMask);
+    private RaycastHit2D CheckIfGrounded(out bool isGrounded, out float groundedDistance)
+    {
+        RaycastHit2D hit = Physics2D.BoxCast((Vector2) transform.position + (Vector2.down * _halfHeight), _groundCheckSize, 0, Vector2.down, groundCheckThickness, _traversableMask);
+        if (hit)
+        {
+            isGrounded = true;
+            groundedDistance = hit.distance;
+        }
+        else
+        {
+            isGrounded = false;
+            groundedDistance = Mathf.Infinity;
+        }
+        return hit;
+    }
 
     private void FixedUpdate()
     {
         //Jumping Logic
         _wasGrounded = _isGrounded;
-        if (_rb.velocity.y > 0)
-            _isGrounded = false;
-        else
-            _isGrounded = CheckIfGrounded();
+        CheckIfGrounded(out _isGrounded, out _groundedDistance);
 
         if (_isGrounded)
         {
@@ -261,7 +273,7 @@ public class PlatformerController : MonoBehaviour
             else
                 _inAirFromFalling = true;
             
-            OnLeaveGround.Invoke();
+            OnLeaveGround?.Invoke();
         }
 
         if (_waitingForJump && !_jumpInCooldown)
@@ -287,8 +299,7 @@ public class PlatformerController : MonoBehaviour
 
         _timeSinceLastJump += Time.fixedDeltaTime;
         _jumpInCooldown = _timeSinceLastJump < jumpCooldownTime;
-
-
+        
         _velocity = _rb.velocity;
 
         //Gravity
@@ -297,7 +308,10 @@ public class PlatformerController : MonoBehaviour
         float gravity = (-2 * maxJumpHeight) / Mathf.Pow(timeToJumpApex, 2) * Time.fixedDeltaTime;
         if (_fastFall)
             gravity *= gravityMultiplier;
-        _velocity.y += gravity;
+        if (!_isGrounded)
+            _velocity.y += gravity;
+        else if(!_jumpInCooldown)
+            _velocity.y = 0;
         _velocity.y = Mathf.Max(_velocity.y, maxFallSpeed);
 
         //Movement
@@ -372,6 +386,10 @@ public class PlatformerController : MonoBehaviour
             }
         }
 
+        //Snap To Ground
+        if (!_jumpInCooldown && _isGrounded)
+            transform.position += new Vector3(0, -_groundedDistance + 0.001f, 0);
+
         //Debug trails
         Vector2 v = xpostrail.position;
         v.x += Time.fixedDeltaTime;
@@ -400,7 +418,7 @@ public class PlatformerController : MonoBehaviour
             Gizmos.DrawWireCube(transform.position + new Vector3(_halfWidth + _velocity.x * Time.fixedDeltaTime, -_size.y / 2 + _horizontalCornerCorrectionHeight / 2, 0), new Vector3(_velocity.x * Time.fixedDeltaTime * 2, _horizontalCornerCorrectionHeight, 0));
         else if(_velocity.x < 0)
             Gizmos.DrawWireCube(transform.position + new Vector3(-_halfWidth + _velocity.x * Time.fixedDeltaTime, -_size.y / 2 + _horizontalCornerCorrectionHeight / 2, 0), new Vector3(_velocity.x * Time.fixedDeltaTime * 2, _horizontalCornerCorrectionHeight, 0));
-        
-        Gizmos.DrawWireCube(transform.position - new Vector3(0, _halfHeight, 0), _groundCheckSize);
+
+        Gizmos.DrawWireCube(transform.position + new Vector3(0, -_halfHeight - (groundCheckThickness / 2), 0), new Vector3(_groundCheckSize.x, groundCheckThickness, 0));
     }
 }

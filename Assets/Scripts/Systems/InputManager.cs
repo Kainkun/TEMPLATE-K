@@ -71,20 +71,20 @@ public class InputManager : SystemSingleton<InputManager>
     public void OnJump(InputValue value)
     {
         //print(value.Get<float>());
-        Jump.Invoke(value.Get<float>());
+        Jump?.Invoke(value.Get<float>());
     }
 
     public Action<Vector2> Move;
     public void OnMove(InputValue value)
     {
         //print(value.Get<Vector2>());
-        Move.Invoke(value.Get<Vector2>());
+        Move?.Invoke(value.Get<Vector2>());
     }
 
     public Action<Vector2> Look;
     public void OnLook(InputValue value)
     {
         //print(value.Get<Vector2>());
-        Look.Invoke(value.Get<Vector2>());
+        Look?.Invoke(value.Get<Vector2>());
     }
 }
