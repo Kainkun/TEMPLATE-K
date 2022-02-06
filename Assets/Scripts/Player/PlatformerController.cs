@@ -354,7 +354,6 @@ public class PlatformerController : MonoBehaviour
 
             if (rightHit)
             {
-                print(rightHit);
                 RaycastHit2D rightHitDist = Physics2D.Raycast(new Vector2(rightHit.point.x + 0.01f, transform.position.y + _halfHeight), Vector2.down, _size.y, _traversableMask);
                 if (rightHitDist && (_size.y - rightHitDist.distance) <= _horizontalCornerCorrectionHeight)
                     transform.position += new Vector3(0.01f, ((_size.y - rightHitDist.distance) + 0.01f), 0);
