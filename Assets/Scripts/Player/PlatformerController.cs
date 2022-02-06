@@ -45,16 +45,21 @@ public class PlatformerController : MonoBehaviour
 
     [Header("Physics")]
     public float groundCheckThickness = 0.1f;
-    public LayerMask traversableMask = 1;
+    private LayerMask _traversableMask;
+    private LayerMask _cornerCorrectionMask;
     private Rigidbody2D _rb;
     private BoxCollider2D _boxCollider;
+    private Vector2 _size;
     private float _halfWidth;
     private float _halfHeight;
     private Vector2 _groundCheckSize;
     private float _timeOnGround;
     [Range(0,0.99f)]
-    public float cornerCorrectionWidthPercent = 0.5f;
-    private float _cornerCorrectionWidth;
+    public float verticalCornerCorrectionWidthPercent = 0.5f;
+    private float _verticalCornerCorrectionWidth;
+    [Range(0,0.99f)]
+    public float horizontalCornerCorrectionHeightPercent = 0.2f;
+    private float _horizontalCornerCorrectionHeight;
     private bool _isGrounded;
     private bool _wasGrounded;
 
@@ -95,14 +100,18 @@ public class PlatformerController : MonoBehaviour
 
     void SetStartingVariables()
     {
-        Vector2 size = _boxCollider.size;
-        _halfWidth = size.x / 2;
-        _halfHeight = size.y / 2;
-        _groundCheckSize = new Vector2(size.x, groundCheckThickness);
-        _cornerCorrectionWidth = _halfWidth * cornerCorrectionWidthPercent;
+        _size = _boxCollider.size;
+        _halfWidth = _size.x / 2;
+        _halfHeight = _size.y / 2;
+        _groundCheckSize = new Vector2(_size.x, groundCheckThickness);
+        _verticalCornerCorrectionWidth = _halfWidth * verticalCornerCorrectionWidthPercent;
+        _horizontalCornerCorrectionHeight = _size.y * horizontalCornerCorrectionHeightPercent;
         
         inverseAccelerationCurve = AnimCurveUtils.InverseIncreasingCurve(accelerationCurve);
         inverseDecelerationCurve = AnimCurveUtils.InverseDecreasingCurve(decelerationCurve);
+        
+        _traversableMask = LayerMask.GetMask("Default", "Platform");
+        _cornerCorrectionMask = LayerMask.GetMask("Default");
 
         _availableJumps = maxJumps;
         _timeSinceJumpPress = Mathf.Infinity;
@@ -214,7 +223,7 @@ public class PlatformerController : MonoBehaviour
     }
 
     
-    private bool CheckIfGrounded() => Physics2D.BoxCast((Vector2) transform.position - new Vector2(0, _halfHeight), _groundCheckSize, 0, Vector2.down, 0, traversableMask);
+    private bool CheckIfGrounded() => Physics2D.BoxCast((Vector2) transform.position - new Vector2(0, _halfHeight), _groundCheckSize, 0, Vector2.down, 0, _traversableMask);
 
     private void FixedUpdate()
     {
@@ -315,25 +324,52 @@ public class PlatformerController : MonoBehaviour
         }
         _rb.velocity = _velocity;
         
-        //Corner Correction
+        //Vertical Corner Correction
         if(_velocity.y > 0)
         {
             Vector2 rightOrigin = (Vector2) transform.position + new Vector2(_halfWidth, _halfHeight);
             Vector2 leftOrigin = (Vector2) transform.position + new Vector2(-_halfWidth, _halfHeight);
-            RaycastHit2D rightHit = Physics2D.Raycast(rightOrigin, Vector2.up, _velocity.y * Time.fixedDeltaTime * 2, traversableMask);
-            RaycastHit2D leftHit = Physics2D.Raycast(leftOrigin, Vector2.up, _velocity.y * Time.fixedDeltaTime * 2, traversableMask);
+            RaycastHit2D rightHit = Physics2D.Raycast(rightOrigin, Vector2.up, _velocity.y * Time.fixedDeltaTime * 2, _cornerCorrectionMask);
+            RaycastHit2D leftHit = Physics2D.Raycast(leftOrigin, Vector2.up, _velocity.y * Time.fixedDeltaTime * 2, _cornerCorrectionMask);
 
             if (leftHit && !rightHit)
             {
-                RaycastHit2D leftHitDist = Physics2D.Raycast(new Vector2(transform.position.x, leftHit.point.y + 0.01f), Vector2.left, _halfWidth, traversableMask);
-                if (leftHitDist && leftHitDist.distance >= _halfWidth - _cornerCorrectionWidth)
+                RaycastHit2D leftHitDist = Physics2D.Raycast(new Vector2(transform.position.x, leftHit.point.y + 0.01f), Vector2.left, _halfWidth, _cornerCorrectionMask);
+                if (leftHitDist && (_halfWidth - leftHitDist.distance) <= _verticalCornerCorrectionWidth)
                     transform.position += Vector3.right * ((_halfWidth - leftHitDist.distance) + 0.01f);
             }
             else if (rightHit && !leftHit)
             {
-                RaycastHit2D rightHitDist = Physics2D.Raycast(new Vector2(transform.position.x, rightHit.point.y + 0.01f), Vector2.right, _halfWidth, traversableMask);
-                if (rightHitDist && rightHitDist.distance >= _halfWidth - _cornerCorrectionWidth)
+                RaycastHit2D rightHitDist = Physics2D.Raycast(new Vector2(transform.position.x, rightHit.point.y + 0.01f), Vector2.right, _halfWidth, _cornerCorrectionMask);
+                if (rightHitDist && (_halfWidth - rightHitDist.distance) <= _verticalCornerCorrectionWidth)
                     transform.position += Vector3.left * ((_halfWidth - rightHitDist.distance) + 0.01f);
+            }
+        }
+
+        //Horizontal Corner Correction
+        if (_velocity.x > 0)
+        {
+            Vector2 rightOrigin = (Vector2) transform.position + new Vector2(_halfWidth, -_halfHeight);
+            RaycastHit2D rightHit = Physics2D.Raycast(rightOrigin, Vector2.right, _velocity.x * Time.fixedDeltaTime * 2, _traversableMask);
+
+            if (rightHit)
+            {
+                print(rightHit);
+                RaycastHit2D rightHitDist = Physics2D.Raycast(new Vector2(rightHit.point.x + 0.01f, transform.position.y + _halfHeight), Vector2.down, _size.y, _traversableMask);
+                if (rightHitDist && (_size.y - rightHitDist.distance) <= _horizontalCornerCorrectionHeight)
+                    transform.position += new Vector3(0.01f, ((_size.y - rightHitDist.distance) + 0.01f), 0);
+            }
+        }
+        else if (_velocity.x < 0)
+        {
+            Vector2 leftOrigin = (Vector2) transform.position + new Vector2(-_halfWidth, -_halfHeight);
+            RaycastHit2D leftHit = Physics2D.Raycast(leftOrigin, Vector2.left, -_velocity.x * Time.fixedDeltaTime * 2, _traversableMask);
+
+            if (leftHit)
+            {
+                RaycastHit2D leftHitDist = Physics2D.Raycast(new Vector2(leftHit.point.x - 0.01f, transform.position.y + _halfHeight), Vector2.down, _size.y, _traversableMask);
+                if (leftHitDist && (_size.y - leftHitDist.distance) <= _horizontalCornerCorrectionHeight)
+                    transform.position += new Vector3(-0.01f, ((_size.y - leftHitDist.distance) + 0.01f), 0);
             }
         }
 
@@ -351,11 +387,20 @@ public class PlatformerController : MonoBehaviour
     private void OnDrawGizmos()
     {
         if (!Application.isPlaying)
-            _velocity = new Vector2(0, 20f);
+            _velocity = new Vector2(10, 20f);
         
         Gizmos.color = Color.red;
-        Gizmos.DrawWireCube(transform.position + new Vector3(_halfWidth - _cornerCorrectionWidth / 2, _halfHeight + _velocity.y * Time.fixedDeltaTime, 0), new Vector3(_cornerCorrectionWidth, _velocity.y * Time.fixedDeltaTime * 2, 0));
-        Gizmos.DrawWireCube(transform.position + new Vector3(-_halfWidth + _cornerCorrectionWidth / 2, _halfHeight + _velocity.y * Time.fixedDeltaTime, 0), new Vector3(_cornerCorrectionWidth, _velocity.y * Time.fixedDeltaTime * 2, 0));
+
+        if (_velocity.y > 0)
+        {
+            Gizmos.DrawWireCube(transform.position + new Vector3(_halfWidth - _verticalCornerCorrectionWidth / 2, _halfHeight + _velocity.y * Time.fixedDeltaTime, 0), new Vector3(_verticalCornerCorrectionWidth, _velocity.y * Time.fixedDeltaTime * 2, 0));
+            Gizmos.DrawWireCube(transform.position + new Vector3(-_halfWidth + _verticalCornerCorrectionWidth / 2, _halfHeight + _velocity.y * Time.fixedDeltaTime, 0), new Vector3(_verticalCornerCorrectionWidth, _velocity.y * Time.fixedDeltaTime * 2, 0));
+        }
+
+        if(_velocity.x > 0)
+            Gizmos.DrawWireCube(transform.position + new Vector3(_halfWidth + _velocity.x * Time.fixedDeltaTime, -_size.y / 2 + _horizontalCornerCorrectionHeight / 2, 0), new Vector3(_velocity.x * Time.fixedDeltaTime * 2, _horizontalCornerCorrectionHeight, 0));
+        else if(_velocity.x < 0)
+            Gizmos.DrawWireCube(transform.position + new Vector3(-_halfWidth + _velocity.x * Time.fixedDeltaTime, -_size.y / 2 + _horizontalCornerCorrectionHeight / 2, 0), new Vector3(_velocity.x * Time.fixedDeltaTime * 2, _horizontalCornerCorrectionHeight, 0));
         
         Gizmos.DrawWireCube(transform.position - new Vector3(0, _halfHeight, 0), _groundCheckSize);
     }
