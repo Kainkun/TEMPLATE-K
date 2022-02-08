@@ -16,10 +16,57 @@ public class InputManager : SystemSingleton<InputManager>
         playerInput = GetComponent<PlayerInput>();
     }
 
+
+    // public InputActionMap[] maps;
+    // public InputActionAsset actions;
+    
     private void Start()
     {
         SceneManager.sceneLoaded += HandleLoadScene;
+
+        // maps = playerInput.actions.actionMaps.ToArray();
+        // print(playerInput.defaultActionMap);
+        // print(playerInput.actions);
+        // foreach (InputActionMap inputActionMap in playerInput.actions.actionMaps)
+        // {
+        //     print(inputActionMap.name);
+        // }
+
+
+        // inputslist.IndexOf("Player");
+        //
+        //
+        // inputStack.Add(inputslist.IndexOf("Player"));
+        //
+        // _inputPriority.Add(new Object(), "test4");
+        // _inputPriority.Add(new Object(), "test3");
+        // _inputPriority.Add(new Object(), "test2");
+        // _inputPriority.Add(new Object(), "test222");
+        // _inputPriority.Add(new Object(), "test5");
+        // _inputPriority.Add(new Object(), "test1");
+        // for (int i = 0; i < _inputPriority.Count; i++)
+        // {
+        //     print(_inputPriority.Values[i]);
+        // }
+        // print(_inputPriority.Remove(new Object()));
     }
+
+    // public bool AddInput(string actionMapName, int priority)
+    // {
+    //     if (priority < _inputPriority.Keys[_inputPriority.Count])
+    //         return false;
+    //     
+    //     _inputPriority.Add(priority, actionMapName);
+    //     playerInput.SwitchCurrentActionMap(_inputPriority.Values[_inputPriority.Count]);
+    //
+    //     return true;
+    // }
+
+    // public void RemoveInput(string actionMapName)
+    // {
+    //     _inputPriority.IndexOfValue("test4");
+    //     playerInput.SwitchCurrentActionMap(_inputPriority.Values[_inputPriority.Count]);
+    // }
 
     public void HandleLoadScene(Scene scene, LoadSceneMode loadSceneMode)
     {

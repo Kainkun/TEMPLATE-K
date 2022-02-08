@@ -1,16 +1,16 @@
-using System;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.ParticleSystemJobs;
-using UnityEngine.PlayerLoop;
 using Random = UnityEngine.Random;
 
 public class PlatformerController : MonoBehaviour
 {
     #region ----------------Variables----------------
+
+    #region ----------------Movement----------------
     [Header("Movement")]
-    public float maxSpeed = 15;
+    public float maxRunSpeed = 15;
+    public float maxSpeed = 25;
     public float timeToMaxSpeed = 0.2f;
     public float timeToStop = 0.1f;
     public float inAirAccelerationMultiplier = 0.5f;
@@ -20,7 +20,13 @@ public class PlatformerController : MonoBehaviour
     public AnimationCurve decelerationCurve = new AnimationCurve(new Keyframe(-1, 1,0,-1, 0,0.25f), new Keyframe(0, 0, -1, 0, 0.25f, 0));
     public AnimationCurve inverseAccelerationCurve;
     public AnimationCurve inverseDecelerationCurve;
+    private Vector2 _velocity;
+    private Vector2 _platformDelta;
+    private Vector2 _lastPlatformVelocity;
+    private Vector2 _position;
+    #endregion
 
+    #region ----------------Jumping----------------
     [Header("Jumping")]
     public float maxJumpHeight = 5;
     public float timeToJumpApex = 0.4f;
@@ -46,7 +52,9 @@ public class PlatformerController : MonoBehaviour
     private bool _inAirFromFalling;
     
     private bool _jumpButtonHolding;
+    #endregion
 
+    #region ----------------Physics----------------
     [Header("Physics")]
     public float groundCheckThickness = 0.1f;
     private LayerMask _traversableMask;
@@ -67,33 +75,41 @@ public class PlatformerController : MonoBehaviour
     private bool _isGrounded;
     private bool _wasGrounded;
     private float _groundedDistance;
+    #endregion
 
+    #region ----------------Effects----------------
     [Header("Effects")]
     public GameObject airJumpParticles;
     public GameObject groundJumpParticles;
     public GameObject landParticles;
     private SpriteRenderer _spriteRenderer;
     private Animator _animator;
+    #endregion
 
+    #region ----------------Audio----------------
     [Header("Audio")]
     public AudioClip[] groundJumpSounds;
     public AudioClip[] airJumpSounds;
     public AudioClip[] landSounds;
     private AudioSource _audioSource;
+    #endregion
 
+    #region ----------------Input----------------
     [Header("Input")]
     public UnityEvent onJump;
     public UnityEvent onGroundJump;
     public UnityEvent onAirJump;
     public UnityEvent onLeaveGround;
     public UnityEvent onLand;
-    private int _numberOfInterrupters;
-    
+    #endregion
+
+    #region ----------------Other----------------
     [Header("Other")]
     public Transform xpostrail;
     public Transform xvelrail;
     #endregion
-    
+    #endregion
+
     private void OnValidate()
     {
         GetComponents();
@@ -136,8 +152,8 @@ public class PlatformerController : MonoBehaviour
         _timeSinceJumpPress = Mathf.Infinity;
         _timeSinceLastJump = Mathf.Infinity;
         _fastFall = true;
-        
-        if (CheckIfGrounded(out _isGrounded, out _groundedDistance, transform.position, Vector2.zero))
+
+        if (CheckIfGrounded())
         {
             _wasGrounded = true;
             _timeOnGround = Mathf.Infinity;
@@ -208,48 +224,75 @@ public class PlatformerController : MonoBehaviour
     
     private void FixedUpdate()
     {
-        Vector2 velocity = _rb.velocity;
-        Vector2 position = (Vector2)transform.position;
-        
-        JumpingUpdate(position, ref velocity);
-        GravityUpdate(ref velocity);
-        MovementUpdate(ref velocity);
-        _rb.velocity = velocity;
+        _velocity = _rb.velocity;
+        _position = (Vector2)transform.position;
 
-        CornerCorrectionUpdate(ref position, velocity);
-        SnapToGroundUpdate(ref position, velocity);
-        transform.position = (Vector3)position;
+        RaycastHit2D hit;
+        bool standingOnRigidBody = CheckIfGrounded(out hit) && hit.rigidbody;
+        bool standingOnMovingKinematic = false;
+        MovingKinematic mk = null;
+        
+        if(standingOnRigidBody)
+        {
+            mk = hit.rigidbody.GetComponent<MovingKinematic>();
+            if (mk)
+                standingOnMovingKinematic = true;
+        }
+        
+        if(standingOnMovingKinematic)
+        {
+            _platformDelta = mk.delta;
+            _lastPlatformVelocity = mk.velocity;
+        }
+        else
+        {
+            _platformDelta = Vector2.zero;
+        }
+        _position += _platformDelta;
+        
+        JumpingUpdate();
+        GravityUpdate();
+        MovementUpdate();
+        
+        CornerCorrectionUpdate();
+        SnapToGroundUpdate();
+        
+        _rb.velocity = _velocity;
+        transform.position = _position;
         
         DebugTrailsUpdate();
     }
     
     #region ----------------FixedUpdate Functions----------------
-    private RaycastHit2D CheckIfGrounded(out bool isGrounded, out float groundedDistance, Vector2 position, Vector2 velocity)
+
+    private bool CheckIfGrounded()
     {
-        RaycastHit2D hit = Physics2D.BoxCast((Vector2)position + (Vector2.down * _halfHeight), _groundCheckSize, 0, Vector2.down, groundCheckThickness, _traversableMask);
-        if (hit && (_wasGrounded || velocity.y <= 0))
+        RaycastHit2D hit;
+        return CheckIfGrounded(out hit);
+    }
+    private bool CheckIfGrounded(out RaycastHit2D hit)
+    {
+        _wasGrounded = _isGrounded;
+
+        hit = Physics2D.BoxCast((Vector2)_position + (Vector2.down * _halfHeight), _groundCheckSize, 0, Vector2.down, groundCheckThickness, _traversableMask);
+
+        if (hit && (_wasGrounded || _velocity.y <= 0))
         {
-            isGrounded = true;
-            groundedDistance = hit.distance;
+            _isGrounded = true;
+            _groundedDistance = hit.distance;
+            _timeOnGround += Time.fixedDeltaTime;
+            return true;
         }
         else
         {
-            isGrounded = false;
-            groundedDistance = Mathf.Infinity;
+            _isGrounded = false;
+            _groundedDistance = Mathf.Infinity;
+            return false;
         }
-        return hit;
     }
     
-    private void JumpingUpdate(Vector2 position, ref Vector2 velocity)
+    private void JumpingUpdate()
     {
-        _wasGrounded = _isGrounded;
-        CheckIfGrounded(out _isGrounded, out _groundedDistance, position, velocity);
-
-        if (_isGrounded)
-        {
-            _timeOnGround += Time.fixedDeltaTime;
-        }
-
         //first frame landing on ground
         if (!_wasGrounded && _isGrounded)
         {
@@ -271,16 +314,20 @@ public class PlatformerController : MonoBehaviour
                 _inAirFromJumping = true;
             else
                 _inAirFromFalling = true;
-            
+
+            print(_lastPlatformVelocity);
+            _velocity += _lastPlatformVelocity;
+            _lastPlatformVelocity = Vector2.zero;
+
             onLeaveGround?.Invoke();
         }
 
         if (_waitingForJump && !_jumpInCooldown)
         {
             if (_isGrounded || _isCoyoteTime)
-                GroundJump(ref velocity);
+                GroundJump();
             else if (_availableJumps > 0)
-                AirJump(ref velocity);
+                AirJump();
         }
 
         if (_inAirFromFalling)
@@ -300,27 +347,40 @@ public class PlatformerController : MonoBehaviour
         _jumpInCooldown = _timeSinceLastJump < jumpCooldownTime;
     }
 
-    private void GravityUpdate(ref Vector2 velocity)
+    private void GravityUpdate()
     {
         //Gravity
-        if (velocity.y < 0)
+        if (_velocity.y < 0)
             _fastFall = true;
         float gravity = (-2 * maxJumpHeight) / Mathf.Pow(timeToJumpApex, 2) * Time.fixedDeltaTime;
         if (_fastFall)
             gravity *= gravityMultiplier;
         if (!_isGrounded)
-            velocity.y += gravity;
+            _velocity.y += gravity;
         else if(!_jumpInCooldown)
-            velocity.y = 0;
-        velocity.y = Mathf.Max(velocity.y, maxFallSpeed);
+            _velocity.y = 0;
+        _velocity.y = Mathf.Max(_velocity.y, maxFallSpeed);
     }
 
-    private void MovementUpdate(ref Vector2 velocity)
+    private void MovementUpdate()
     {
+        // if (Mathf.Abs(_velocity.x) > maxRunSpeed)
+        // {
+        //     float percentMaxSpeed = Mathf.Abs(_velocity.x) / maxSpeed;
+        //     
+        //     if (_isGrounded)
+        //         percentMaxSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(-percentMaxSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime));
+        //     else
+        //         percentMaxSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(-percentMaxSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime) * 0.1f);
+        //     
+        //     _velocity.x = maxSpeed * decelerationCurve.Evaluate(-percentMaxSpeed) * Mathf.Sign(_velocity.x);
+        //     return;
+        // }
+        
         //Movement
-        float percentSpeed = Mathf.Abs(velocity.x) / maxSpeed;
-        bool a = _moveInputDirection.x < -0.01f && velocity.x <= 0.1f;
-        bool b = _moveInputDirection.x > 0.01f && velocity.x >= -0.1f;
+        float percentSpeed = Mathf.Abs(_velocity.x) / maxRunSpeed;
+        bool a = _moveInputDirection.x < -0.01f && _velocity.x <= 0.1f;
+        bool b = _moveInputDirection.x > 0.01f && _velocity.x >= -0.1f;
         if (a || b) //accelerate
         {
             if (_isGrounded)
@@ -328,7 +388,7 @@ public class PlatformerController : MonoBehaviour
             else
                 percentSpeed = Mathf.Clamp01(inverseAccelerationCurve.Evaluate(percentSpeed) + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime) * inAirAccelerationMultiplier);
             
-            velocity.x = maxSpeed * accelerationCurve.Evaluate(percentSpeed) * Mathf.Sign(_moveInputDirection.x);
+            _velocity.x = maxRunSpeed * accelerationCurve.Evaluate(percentSpeed) * Mathf.Sign(_moveInputDirection.x);
         }
         else //decelerate
         {
@@ -337,69 +397,69 @@ public class PlatformerController : MonoBehaviour
             else
                 percentSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(-percentSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime) * inAirDecelerationMultiplier);
             
-            velocity.x = maxSpeed * decelerationCurve.Evaluate(-percentSpeed) * Mathf.Sign(velocity.x);
+            _velocity.x = maxRunSpeed * decelerationCurve.Evaluate(-percentSpeed) * Mathf.Sign(_velocity.x);
         }
     }
 
-    private void CornerCorrectionUpdate(ref Vector2 position, Vector2 velocity)
+    private void CornerCorrectionUpdate()
     {
         //Vertical Corner Correction
-        if(velocity.y > 0)
+        if(_velocity.y > 0)
         {
-            Vector2 rightOrigin = (Vector2) position + new Vector2(_halfWidth, _halfHeight);
-            Vector2 leftOrigin = (Vector2) position + new Vector2(-_halfWidth, _halfHeight);
-            RaycastHit2D rightHit = Physics2D.Raycast(rightOrigin, Vector2.up, velocity.y * Time.fixedDeltaTime * 2, _cornerCorrectionMask);
-            RaycastHit2D leftHit = Physics2D.Raycast(leftOrigin, Vector2.up, velocity.y * Time.fixedDeltaTime * 2, _cornerCorrectionMask);
+            Vector2 rightOrigin = (Vector2) _position + new Vector2(_halfWidth, _halfHeight);
+            Vector2 leftOrigin = (Vector2) _position + new Vector2(-_halfWidth, _halfHeight);
+            RaycastHit2D rightHit = Physics2D.Raycast(rightOrigin, Vector2.up, _velocity.y * Time.fixedDeltaTime * 2, _cornerCorrectionMask);
+            RaycastHit2D leftHit = Physics2D.Raycast(leftOrigin, Vector2.up, _velocity.y * Time.fixedDeltaTime * 2, _cornerCorrectionMask);
 
             if (leftHit && !rightHit)
             {
-                RaycastHit2D leftHitDist = Physics2D.Raycast(new Vector2(position.x, leftHit.point.y + 0.01f), Vector2.left, _halfWidth, _cornerCorrectionMask);
+                RaycastHit2D leftHitDist = Physics2D.Raycast(new Vector2(_position.x, leftHit.point.y + 0.01f), Vector2.left, _halfWidth, _cornerCorrectionMask);
                 if (leftHitDist && (_halfWidth - leftHitDist.distance) <= _verticalCornerCorrectionWidth)
-                    position += Vector2.right * ((_halfWidth - leftHitDist.distance) + 0.05f);
+                    _position += Vector2.right * ((_halfWidth - leftHitDist.distance) + 0.05f);
             }
             else if (rightHit && !leftHit)
             {
-                RaycastHit2D rightHitDist = Physics2D.Raycast(new Vector2(position.x, rightHit.point.y + 0.01f), Vector2.right, _halfWidth, _cornerCorrectionMask);
+                RaycastHit2D rightHitDist = Physics2D.Raycast(new Vector2(_position.x, rightHit.point.y + 0.01f), Vector2.right, _halfWidth, _cornerCorrectionMask);
                 if (rightHitDist && (_halfWidth - rightHitDist.distance) <= _verticalCornerCorrectionWidth)
-                    position += Vector2.left * ((_halfWidth - rightHitDist.distance) + 0.05f);
+                    _position += Vector2.left * ((_halfWidth - rightHitDist.distance) + 0.05f);
             }
         }
 
         //Horizontal Corner Correction
-        if (velocity.y > 0)
+        if (_velocity.y > 0)
             return;
-        if (velocity.x > 0)
+        if (_velocity.x > 0)
         {
-            Vector2 rightOrigin = (Vector2) position + new Vector2(_halfWidth, -_halfHeight);
-            RaycastHit2D rightHit = Physics2D.Raycast(rightOrigin, Vector2.right, velocity.x * Time.fixedDeltaTime * 2, _traversableMask);
+            Vector2 rightOrigin = (Vector2) _position + new Vector2(_halfWidth, -_halfHeight);
+            RaycastHit2D rightHit = Physics2D.Raycast(rightOrigin, Vector2.right, _velocity.x * Time.fixedDeltaTime * 2, _traversableMask);
 
             if (rightHit)
             {
-                RaycastHit2D rightHitDist = Physics2D.Raycast(new Vector2(rightHit.point.x + 0.01f, position.y + _halfHeight), Vector2.down, _size.y, _traversableMask);
+                RaycastHit2D rightHitDist = Physics2D.Raycast(new Vector2(rightHit.point.x + 0.01f, _position.y + _halfHeight), Vector2.down, _size.y, _traversableMask);
                 if (rightHitDist && (_size.y - rightHitDist.distance) <= _horizontalCornerCorrectionHeight)
-                    position += new Vector2(0.05f, ((_size.y - rightHitDist.distance) + 0.05f));
+                    _position += new Vector2(0.05f, ((_size.y - rightHitDist.distance) + 0.05f));
             }
         }
-        else if (velocity.x < 0)
+        else if (_velocity.x < 0)
         {
-            Vector2 leftOrigin = (Vector2) position + new Vector2(-_halfWidth, -_halfHeight);
-            RaycastHit2D leftHit = Physics2D.Raycast(leftOrigin, Vector2.left, -velocity.x * Time.fixedDeltaTime * 2, _traversableMask);
+            Vector2 leftOrigin = (Vector2) _position + new Vector2(-_halfWidth, -_halfHeight);
+            RaycastHit2D leftHit = Physics2D.Raycast(leftOrigin, Vector2.left, -_velocity.x * Time.fixedDeltaTime * 2, _traversableMask);
 
             if (leftHit)
             {
-                RaycastHit2D leftHitDist = Physics2D.Raycast(new Vector2(leftHit.point.x - 0.05f, position.y + _halfHeight), Vector2.down, _size.y, _traversableMask);
+                RaycastHit2D leftHitDist = Physics2D.Raycast(new Vector2(leftHit.point.x - 0.05f, _position.y + _halfHeight), Vector2.down, _size.y, _traversableMask);
                 if (leftHitDist && (_size.y - leftHitDist.distance) <= _horizontalCornerCorrectionHeight)
-                    position += new Vector2(-0.05f, ((_size.y - leftHitDist.distance) + 0.05f));
+                    _position += new Vector2(-0.05f, ((_size.y - leftHitDist.distance) + 0.05f));
             }
         }
     }
 
-    private void SnapToGroundUpdate(ref Vector2 position, Vector2 velocity)
+    private void SnapToGroundUpdate()
     {
         //Snap To Ground
-        if (!_jumpInCooldown && CheckIfGrounded(out _isGrounded,out _groundedDistance, position, velocity))
+        if (!_jumpInCooldown && CheckIfGrounded())
             if(_groundedDistance < Mathf.Infinity)
-                position += new Vector2(0, -_groundedDistance + 0.001f);
+                _position += new Vector2(0, -_groundedDistance + 0.001f);
     }
 
     private void DebugTrailsUpdate()
@@ -417,9 +477,9 @@ public class PlatformerController : MonoBehaviour
     #endregion
 
     #region ----------------Jump Functions--------
-    private void Jump(ref Vector2 velocity)
+    private void Jump()
     {
-        velocity.y = (2 * maxJumpHeight) / timeToJumpApex;
+        _velocity.y = (2 * maxJumpHeight) / timeToJumpApex;
 
         _fastFall = !_jumpButtonHolding;
         _inAirFromJumping = true;
@@ -428,24 +488,20 @@ public class PlatformerController : MonoBehaviour
         onJump?.Invoke();
     }
 
-    private void GroundJump(ref Vector2 velocity)
+    private void GroundJump()
     {
-        Jump(ref velocity);
+        Jump();
         onGroundJump?.Invoke();
     }
 
-    private void AirJump(ref Vector2 velocity)
+    private void AirJump()
     {
         _availableJumps--;
-        Jump(ref velocity);
+        Jump();
         onAirJump?.Invoke();
     }
     #endregion
-
-
-    public void AddInterrupter() => _numberOfInterrupters++;
-    public void SubtractInterrupter() => _numberOfInterrupters--;
-
+    
     private void OnDrawGizmos()
     {
         if (!Application.isPlaying)

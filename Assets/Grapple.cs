@@ -17,6 +17,16 @@ public class Grapple : MonoBehaviour
         _distanceJoint.enabled = false;
     }
 
+    private void OnEnable()
+    {
+        //GetComponent<PlatformerController>().AddInterrupter(this, 1);
+    }
+
+    private void OnDisable()
+    {
+        //GetComponent<PlatformerController>().RemoveInterrupter(this);
+    }
+
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.F))
