@@ -407,7 +407,7 @@ public class PlatformerController : MonoBehaviour
             
             _velocity.x = maxRunSpeed * Mathf.Pow(percentSpeed, 1/decelerationCurve) * Mathf.Sign(_velocity.x);
         }
-        print(_velocity);
+        //print(_velocity);
     }
 
     private void CornerCorrectionUpdate()
