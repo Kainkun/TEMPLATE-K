@@ -104,7 +104,7 @@ public class PlatformerController : MonoBehaviour
     #region ----------------Other----------------
     [Header("Other")]
     public Transform xpostrail;
-    public Transform xvelrail;
+    public Transform xveltrail;
     #endregion
     #endregion
 
@@ -473,15 +473,18 @@ public class PlatformerController : MonoBehaviour
 
     private void DebugTrailsUpdate()
     {
+        if (!(xpostrail && xveltrail))
+            return;
+            
         //Debug trails
         Vector2 v = xpostrail.position;
         v.x += Time.fixedDeltaTime;
         v.y = transform.position.x;
         xpostrail.position = v;
-        v = xvelrail.position;
+        v = xveltrail.position;
         v.x += Time.fixedDeltaTime;
         v.y = _rb.velocity.x;
-        xvelrail.position = v;
+        xveltrail.position = v;
     }
     #endregion
 
