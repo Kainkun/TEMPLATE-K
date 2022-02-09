@@ -4,25 +4,28 @@ using UnityEngine;
 
 public class MovingPlatform : MovingKinematic
 {
-    private bool right = true;
-    
+    private bool forward = true;
+    private float t = 0;
+    public float time = 1;
+    public Vector2 direction = new Vector2(5, 0);
+
     protected override Vector2 Move()
     {
-        if (right)
+        if (forward)
         {
-            if (Vector2.Distance(transform.position, startPosition) >= 5)
-                right = false;
+            if (t >= 1)
+                forward = false;
 
-            return (Vector2)transform.position + new Vector2(25 * Time.fixedDeltaTime, 0);
+            t += Time.fixedDeltaTime * 1 / time;
         }
         else
         {
-            if (Vector2.Distance(transform.position, startPosition) <= 0)
-                right = true;
-            
-            return (Vector2)transform.position + new Vector2(-25 * Time.fixedDeltaTime, 0);
+            if (t <= 0)
+                forward = true;
+
+            t -= Time.fixedDeltaTime * 1 / time;
         }
-        
+
+        return Vector2.Lerp(startPosition, startPosition + direction, t);
     }
-    
 }

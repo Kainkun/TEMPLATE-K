@@ -16,10 +16,8 @@ public class PlatformerController : MonoBehaviour
     public float inAirAccelerationMultiplier = 0.5f;
     public float inAirDecelerationMultiplier = 0.5f;
     private Vector2 _moveInputDirection;
-    public AnimationCurve accelerationCurve = new AnimationCurve(new Keyframe(0, 0,0,1, 0,0.25f), new Keyframe(1, 1, 1, 0, 0.25f, 0));
-    public AnimationCurve decelerationCurve = new AnimationCurve(new Keyframe(-1, 1,0,-1, 0,0.25f), new Keyframe(0, 0, -1, 0, 0.25f, 0));
-    public AnimationCurve inverseAccelerationCurve;
-    public AnimationCurve inverseDecelerationCurve;
+    public float accelerationCurve = 3.66f;
+    public float decelerationCurve = 3.66f;
     private Vector2 _velocity;
     private Vector2 _platformDelta;
     private Vector2 _lastPlatformVelocity;
@@ -141,10 +139,7 @@ public class PlatformerController : MonoBehaviour
         _groundCheckSize = new Vector2(_size.x, 0.001f);
         _verticalCornerCorrectionWidth = _halfWidth * verticalCornerCorrectionWidthPercent;
         _horizontalCornerCorrectionHeight = _size.y * horizontalCornerCorrectionHeightPercent;
-        
-        inverseAccelerationCurve = AnimCurveUtils.InverseIncreasingCurve(accelerationCurve);
-        inverseDecelerationCurve = AnimCurveUtils.InverseDecreasingCurve(decelerationCurve);
-        
+
         _traversableMask = LayerMask.GetMask("Default", "Platform");
         _cornerCorrectionMask = LayerMask.GetMask("Default");
 
@@ -364,41 +359,55 @@ public class PlatformerController : MonoBehaviour
 
     private void MovementUpdate()
     {
-        // if (Mathf.Abs(_velocity.x) > maxRunSpeed)
-        // {
-        //     float percentMaxSpeed = Mathf.Abs(_velocity.x) / maxSpeed;
-        //     
-        //     if (_isGrounded)
-        //         percentMaxSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(-percentMaxSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime));
-        //     else
-        //         percentMaxSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(-percentMaxSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime) * 0.1f);
-        //     
-        //     _velocity.x = maxSpeed * decelerationCurve.Evaluate(-percentMaxSpeed) * Mathf.Sign(_velocity.x);
-        //     return;
-        // }
+        if (Mathf.Abs(_velocity.x) > maxRunSpeed) //when past max run speed
+        {
+            float percentMaxSpeed = Mathf.Abs(_velocity.x) / maxSpeed;
+            bool aa = _moveInputDirection.x < -0.01f && _velocity.x <= 0.1f;
+            bool bb = _moveInputDirection.x > 0.01f && _velocity.x >= -0.1f;
+            if (aa || bb) //with the flow
+            {
+                if (_isGrounded)
+                    percentMaxSpeed = Mathf.Max(Mathf.Pow(percentMaxSpeed, decelerationCurve) - Time.fixedDeltaTime, 0);
+                else
+                    percentMaxSpeed = Mathf.Max(Mathf.Pow(percentMaxSpeed, decelerationCurve) - Time.fixedDeltaTime * inAirDecelerationMultiplier,0);
+            
+                _velocity.x = maxSpeed * Mathf.Pow(percentMaxSpeed, 1/decelerationCurve) * Mathf.Sign(_velocity.x);
+            }
+            else //against the flow
+            {
+                if (_isGrounded)
+                    percentMaxSpeed = Mathf.Max(Mathf.Pow(percentMaxSpeed, decelerationCurve) - ((1 / 0.15f) * Time.fixedDeltaTime), 0);
+                else
+                    percentMaxSpeed = Mathf.Max(Mathf.Pow(percentMaxSpeed, decelerationCurve) - ((1 / 0.15f) * Time.fixedDeltaTime) * inAirDecelerationMultiplier,0);
+            
+                _velocity.x = maxSpeed * Mathf.Pow(percentMaxSpeed, 1/decelerationCurve) * Mathf.Sign(_velocity.x);
+            }
+            return;
+        }
         
         //Movement
         float percentSpeed = Mathf.Abs(_velocity.x) / maxRunSpeed;
         bool a = _moveInputDirection.x < -0.01f && _velocity.x <= 0.1f;
         bool b = _moveInputDirection.x > 0.01f && _velocity.x >= -0.1f;
-        if (a || b) //accelerate
+        if (a || b) //accelerate with the flow
         {
             if (_isGrounded)
-                percentSpeed = Mathf.Clamp01(inverseAccelerationCurve.Evaluate(percentSpeed) + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime));
+                percentSpeed = Mathf.Clamp01(Mathf.Pow(percentSpeed, accelerationCurve) + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime));
             else
-                percentSpeed = Mathf.Clamp01(inverseAccelerationCurve.Evaluate(percentSpeed) + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime) * inAirAccelerationMultiplier);
+                percentSpeed = Mathf.Clamp01(Mathf.Pow(percentSpeed, accelerationCurve) + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime) * inAirAccelerationMultiplier);
             
-            _velocity.x = maxRunSpeed * accelerationCurve.Evaluate(percentSpeed) * Mathf.Sign(_moveInputDirection.x);
+            _velocity.x = maxRunSpeed * Mathf.Pow(percentSpeed, 1/accelerationCurve) * Mathf.Sign(_moveInputDirection.x);
         }
-        else //decelerate
+        else //decelerate against the flow
         {
             if (_isGrounded)
-                percentSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(-percentSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime));
+                percentSpeed = Mathf.Clamp01(Mathf.Pow(percentSpeed, decelerationCurve) - ((1 / timeToStop) * Time.fixedDeltaTime));
             else
-                percentSpeed = Mathf.Clamp01(inverseDecelerationCurve.Evaluate(-percentSpeed) - ((1 / timeToStop) * Time.fixedDeltaTime) * inAirDecelerationMultiplier);
+                percentSpeed = Mathf.Clamp01(Mathf.Pow(percentSpeed, decelerationCurve) - ((1 / timeToStop) * Time.fixedDeltaTime) * inAirDecelerationMultiplier);
             
-            _velocity.x = maxRunSpeed * decelerationCurve.Evaluate(-percentSpeed) * Mathf.Sign(_velocity.x);
+            _velocity.x = maxRunSpeed * Mathf.Pow(percentSpeed, 1/decelerationCurve) * Mathf.Sign(_velocity.x);
         }
+        print(_velocity);
     }
 
     private void CornerCorrectionUpdate()
