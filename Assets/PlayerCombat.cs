@@ -6,6 +6,6 @@ public class PlayerCombat : MonoBehaviour
 {
     void Start()
     {
-        print("combat! time!!!! wooooooo! still confused???");
+        print("combat! time!!!! wooooooo! still confused??? maybe now work!");
     }
 }
