@@ -423,6 +423,8 @@ MonoBehaviour:
   inAirDecelerationMultiplier: 0.5
   accelerationCurve: 3.66
   decelerationCurve: 3.66
+  crouchTimeToFall: 0.2
+  timeToFallThroughPlatform: 0.2
   maxJumpHeight: 5
   timeToJumpApex: 0.4
   maxJumps: 2
