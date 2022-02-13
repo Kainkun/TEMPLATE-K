@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
 
-public class MovingPlatform : MovingKinematic
+public class LerpMovingKinematic : MovingKinematic
 {
     private bool forward = true;
     private float t = 0;
