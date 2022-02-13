@@ -7,26 +7,31 @@ using UnityEngine.EventSystems;
 public abstract class MovingKinematic : MonoBehaviour
 {
     protected Vector2 startPosition;
-    protected Rigidbody2D rb;
-    protected Vector2 previousPosition;
-    [HideInInspector]
-    public Vector2 velocity;
-    [HideInInspector]
-    public Vector2 delta;
+    private Rigidbody2D rb;
+    private Vector2 currentPosition;
+    private Vector2 nextFramePosition;
+    private Vector2 _velocity;
+    private Vector2 _delta;
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         startPosition = transform.position;
+        currentPosition = startPosition;
+        nextFramePosition = startPosition;
     }
 
     void FixedUpdate()
     {
-        previousPosition = rb.position;
-        Vector2 newPosition = Move();
-        delta = newPosition - previousPosition;
-        velocity = delta / Time.fixedDeltaTime;
-        rb.MovePosition(newPosition);
+        rb.MovePosition(nextFramePosition);
+        currentPosition = nextFramePosition;
+        
+        Move(ref nextFramePosition);
+        _delta = nextFramePosition - currentPosition;
+        _velocity = _delta / Time.fixedDeltaTime;
     }
 
-    protected abstract Vector2 Move();
+    protected abstract void Move(ref Vector2 nextFramePosition);
+
+    public Vector2 Velocity => _velocity;
+    public Vector2 Delta => _delta;
 }

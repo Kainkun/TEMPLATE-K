@@ -2,10 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerCombat : MonoBehaviour
+public class PlayerCombat : Entity
 {
-    void Start()
-    {
-        print("combat! time!!!! wooooooo! still confused??? maybe now work!");
-    }
+    
 }
