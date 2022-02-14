@@ -1,17 +1,24 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
 
-public class LerpMovingKinematic : MovingKinematic
+public class LerpMovingKinematic : MonoBehaviour
 {
+    private MovingKinematic _movingKinematic;
     private bool forward = true;
     private float t = 0;
     public float forwardTime = 1;
     public float backTime = 1;
     public Vector2 direction = new Vector2(5, 0);
 
-    protected override void Move(ref Vector2 position)
+    private void Start()
+    {
+        _movingKinematic = GetComponent<MovingKinematic>();
+    }
+
+    private void FixedUpdate()
     {
         if (forwardTime <= 0 || backTime <= 0)
             return;
@@ -32,7 +39,8 @@ public class LerpMovingKinematic : MovingKinematic
             if (t <= 0)
                 forward = true;
         }
-
-        position = Vector2.Lerp(startPosition, startPosition + direction, t);
+        
+        var position = Vector2.Lerp(_movingKinematic.StartPosition, _movingKinematic.StartPosition + direction, t);
+        _movingKinematic.MovementUpdate(position);
     }
 }

@@ -4,34 +4,36 @@ using System.ComponentModel;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public abstract class MovingKinematic : MonoBehaviour
+public class MovingKinematic : MonoBehaviour
 {
-    protected Vector2 startPosition;
+    private Vector2 _startPosition;
     private Rigidbody2D rb;
-    private Vector2 currentPosition;
-    private Vector2 nextFramePosition;
+    private Vector2 _currentPosition;
+    private Vector2 _nextFramePosition;
     private Vector2 _velocity;
     private Vector2 _delta;
+
+    public Vector2 StartPosition => _startPosition;
+    public Vector2 CurrentPosition => _nextFramePosition;
+    public Vector2 Velocity => _velocity;
+    public Vector2 Delta => _delta;
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        startPosition = transform.position;
-        currentPosition = startPosition;
-        nextFramePosition = startPosition;
+        _startPosition = transform.position;
+        _currentPosition = _startPosition;
+        _nextFramePosition = _startPosition;
     }
 
-    void FixedUpdate()
+    public void MovementUpdate(Vector2 position)
     {
-        rb.MovePosition(nextFramePosition);
-        currentPosition = nextFramePosition;
+        rb.MovePosition(_nextFramePosition);
+        _currentPosition = _nextFramePosition;
+
+        _nextFramePosition = position;
         
-        Move(ref nextFramePosition);
-        _delta = nextFramePosition - currentPosition;
+        _delta = _nextFramePosition - _currentPosition;
         _velocity = _delta / Time.fixedDeltaTime;
     }
-
-    protected abstract void Move(ref Vector2 nextFramePosition);
-
-    public Vector2 Velocity => _velocity;
-    public Vector2 Delta => _delta;
 }
