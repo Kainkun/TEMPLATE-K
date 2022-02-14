@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class State<T>
+public abstract class State<T> where T : StateMachine<T>
 {
     public virtual void EnterState(T stateMachine) { }
     public virtual void UpdateState(T stateMachine) { }
