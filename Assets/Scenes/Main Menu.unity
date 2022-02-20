@@ -132,11 +132,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2576949002876937543, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_SizeDelta.y
-      value: -10.680004
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2576949002876937543, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 5.3399982
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3902511599204114718, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_Pivot.x
@@ -233,11 +233,11 @@ PrefabInstance:
     - target: {fileID: 4316636969581736082, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_fontAsset
       value: 
-      objectReference: {fileID: 11400000, guid: 148da5830a286ab4dafc879cc40f091c, type: 2}
+      objectReference: {fileID: 11400000, guid: dbda19f9c83c98e41bedb8a4d4aa4c1a, type: 2}
     - target: {fileID: 4316636969581736082, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_sharedMaterial
       value: 
-      objectReference: {fileID: 2571347010917557271, guid: 148da5830a286ab4dafc879cc40f091c, type: 2}
+      objectReference: {fileID: -1873816004864304030, guid: dbda19f9c83c98e41bedb8a4d4aa4c1a, type: 2}
     - target: {fileID: 4620441922178794914, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_Name
       value: Settings Button
@@ -415,7 +415,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.0061706356, g: 0.01886791, b: 0.00812235, a: 1}
+  m_Color: {r: 0.047058824, g: 0.003921569, b: 0.03529412, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -532,11 +532,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2576949002876937543, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_SizeDelta.y
-      value: -10.680004
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2576949002876937543, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 5.3399982
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3902511599204114718, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_Pivot.x
@@ -633,11 +633,11 @@ PrefabInstance:
     - target: {fileID: 4316636969581736082, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_fontAsset
       value: 
-      objectReference: {fileID: 11400000, guid: 148da5830a286ab4dafc879cc40f091c, type: 2}
+      objectReference: {fileID: 11400000, guid: dbda19f9c83c98e41bedb8a4d4aa4c1a, type: 2}
     - target: {fileID: 4316636969581736082, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_sharedMaterial
       value: 
-      objectReference: {fileID: 2571347010917557271, guid: 148da5830a286ab4dafc879cc40f091c, type: 2}
+      objectReference: {fileID: -1873816004864304030, guid: dbda19f9c83c98e41bedb8a4d4aa4c1a, type: 2}
     - target: {fileID: 4620441922178794914, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_Name
       value: Quit Button
@@ -703,11 +703,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2576949002876937543, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_SizeDelta.y
-      value: -10.680004
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2576949002876937543, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 5.3399982
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3902511599204114718, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_Pivot.x
@@ -804,11 +804,11 @@ PrefabInstance:
     - target: {fileID: 4316636969581736082, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_fontAsset
       value: 
-      objectReference: {fileID: 11400000, guid: 148da5830a286ab4dafc879cc40f091c, type: 2}
+      objectReference: {fileID: 11400000, guid: dbda19f9c83c98e41bedb8a4d4aa4c1a, type: 2}
     - target: {fileID: 4316636969581736082, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_sharedMaterial
       value: 
-      objectReference: {fileID: 2571347010917557271, guid: 148da5830a286ab4dafc879cc40f091c, type: 2}
+      objectReference: {fileID: -1873816004864304030, guid: dbda19f9c83c98e41bedb8a4d4aa4c1a, type: 2}
     - target: {fileID: 4620441922178794914, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_Name
       value: Credits Button
@@ -1152,17 +1152,17 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Deleted Memories
+  m_text: Template-K
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 148da5830a286ab4dafc879cc40f091c, type: 2}
-  m_sharedMaterial: {fileID: 2571347010917557271, guid: 148da5830a286ab4dafc879cc40f091c, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 2cb477b774518b142861dbded9728eed, type: 2}
+  m_sharedMaterial: {fileID: -1860960580362816995, guid: 2cb477b774518b142861dbded9728eed, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4283874864
-  m_fontColor: {r: 0.18749252, g: 0.745283, b: 0.3370367, a: 1}
+    rgba: 4291080947
+  m_fontColor: {r: 0.9529412, g: 0.69803923, b: 0.76862746, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1238,11 +1238,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2576949002876937543, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_SizeDelta.y
-      value: -10.680004
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2576949002876937543, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 5.3399982
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3902511599204114718, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_Pivot.x
@@ -1339,11 +1339,11 @@ PrefabInstance:
     - target: {fileID: 4316636969581736082, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_fontAsset
       value: 
-      objectReference: {fileID: 11400000, guid: 148da5830a286ab4dafc879cc40f091c, type: 2}
+      objectReference: {fileID: 11400000, guid: dbda19f9c83c98e41bedb8a4d4aa4c1a, type: 2}
     - target: {fileID: 4316636969581736082, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_sharedMaterial
       value: 
-      objectReference: {fileID: 2571347010917557271, guid: 148da5830a286ab4dafc879cc40f091c, type: 2}
+      objectReference: {fileID: -1873816004864304030, guid: dbda19f9c83c98e41bedb8a4d4aa4c1a, type: 2}
     - target: {fileID: 4620441922178794914, guid: f83adb03c4a8f3e428ceeca412aeb9ba, type: 3}
       propertyPath: m_Name
       value: Play Button

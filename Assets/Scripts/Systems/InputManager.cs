@@ -70,6 +70,7 @@ public class InputManager : SystemSingleton<InputManager>
 
     public void HandleLoadScene(Scene scene, LoadSceneMode loadSceneMode)
     {
+        print(playerInput);
         if(scene.buildIndex == 0)
             playerInput.SwitchCurrentActionMap("UI");
         else
@@ -80,6 +81,7 @@ public class InputManager : SystemSingleton<InputManager>
     {
         if(SceneManager.GetActiveScene().buildIndex != 0)
         {
+            print(playerInput);
             playerInput.SwitchCurrentActionMap("UI");
             GameManager.Get().TogglePauseUI(true);
             GameManager.Get().TogglePause(true);
@@ -90,6 +92,7 @@ public class InputManager : SystemSingleton<InputManager>
     {
         if(SceneManager.GetActiveScene().buildIndex != 0)
         {
+            print(playerInput);
             playerInput.SwitchCurrentActionMap("Player");
             GameManager.Get().TogglePauseUI(false);
             GameManager.Get().TogglePause(false);
