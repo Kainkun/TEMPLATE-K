@@ -158,6 +158,7 @@ public class PlatformerController : MonoBehaviour
         _timeSinceJumpPress = Mathf.Infinity;
         _timeSinceLastJump = Mathf.Infinity;
         _fastFall = true;
+        _position = transform.position;
         _velocity = Vector2.zero;
         _rb.velocity = Vector2.zero;
 
