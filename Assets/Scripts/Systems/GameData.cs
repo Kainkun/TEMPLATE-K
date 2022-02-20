@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem.Interactions;
 
 public class GameData
 {
@@ -13,6 +14,6 @@ public class GameData
     {
         defaultGroundMask = LayerMask.GetMask("Default");
         platformMask = LayerMask.GetMask("Platform");
-        traversableMask =  defaultGroundMask & platformMask;
+        traversableMask =  defaultGroundMask | platformMask;
     }
 }
