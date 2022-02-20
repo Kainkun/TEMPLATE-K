@@ -10,10 +10,10 @@ using UnityEngine.UI;
 
 public class GameManager : SystemSingleton<GameManager>
 {
-    [HideInInspector] public GameObject overlayCredits;
-    [HideInInspector] public GameObject overlayPause;
-    [HideInInspector] public GameObject overlaySettings;
-    [HideInInspector] public GameObject eventSystem;
+    public static GameObject overlayCredits;
+    public static GameObject overlayPause;
+    public static GameObject overlaySettings;
+    public static GameObject eventSystem;
     
     public static bool applicationIsQuitting = false;
 
@@ -38,23 +38,23 @@ public class GameManager : SystemSingleton<GameManager>
          overlaySettings.SetActive(false);
     }
 
-    public void ToggleCreditsUI() => overlayCredits.SetActive(!overlayCredits.activeSelf);
-    public void ToggleCreditsUI(bool active) =>overlayCredits.SetActive(active);
-    public void TogglePauseUI() => overlayPause.SetActive(!overlayPause.activeSelf);
-    public void TogglePauseUI(bool active) =>overlayPause.SetActive(active);
-    public void ToggleSettingsUI() => overlaySettings.SetActive(!overlaySettings.activeSelf);
-    public void ToggleSettingsUI(bool active) =>overlaySettings.SetActive(active);
+    public static void ToggleCreditsUI() => overlayCredits.SetActive(!overlayCredits.activeSelf);
+    public static void ToggleCreditsUI(bool active) =>overlayCredits.SetActive(active);
+    public static void TogglePauseUI() => overlayPause.SetActive(!overlayPause.activeSelf);
+    public static void TogglePauseUI(bool active) =>overlayPause.SetActive(active);
+    public static void ToggleSettingsUI() => overlaySettings.SetActive(!overlaySettings.activeSelf);
+    public static void ToggleSettingsUI(bool active) =>overlaySettings.SetActive(active);
 
 
     
-    [HideInInspector] public bool paused;
-    public Action<bool> OnPauseChange;
-    public void TogglePause()
+    public static bool paused;
+    public static Action<bool> OnPauseChange;
+    public static void TogglePause()
     {
         TogglePause(!paused);
     }
     
-    public void TogglePause(bool pause)
+    public static void TogglePause(bool pause)
     {
         paused = pause;
         Time.timeScale = pause ? 0 : 1;
@@ -62,12 +62,12 @@ public class GameManager : SystemSingleton<GameManager>
     }
     
     
-    public void LoadScene(int index)
+    public static void LoadScene(int index)
     {
         SceneManager.LoadScene(index);
     }
 
-    public void QuitGame()
+    public static void QuitGame()
     {
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;

@@ -6,8 +6,8 @@ using UnityEngine.Audio;
 
 public class AudioManager : SystemSingleton<AudioManager>
 {
-    private AudioMixer main;
-    private AudioMixerGroup master;
+    private static AudioMixer main;
+    private static AudioMixerGroup master;
 
     protected override void Awake()
     {
