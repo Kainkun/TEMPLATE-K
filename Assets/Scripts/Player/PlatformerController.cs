@@ -63,9 +63,6 @@ public class PlatformerController : MonoBehaviour
     #region ----------------Physics----------------
     [Header("Physics")]
     public float groundCheckThickness = 0.1f;
-    private LayerMask _defaultGroundMask;
-    private LayerMask _platformMask;
-    private LayerMask _traversableMask;
     private Rigidbody2D _rb;
     private BoxCollider2D _boxCollider;
     private Vector2 _size;
@@ -155,10 +152,6 @@ public class PlatformerController : MonoBehaviour
         _verticalCornerCorrectionWidth = _halfWidth * verticalCornerCorrectionWidthPercent;
         _horizontalCornerCorrectionHeight = _size.y * horizontalCornerCorrectionHeightPercent;
 
-        _defaultGroundMask = LayerMask.GetMask("Default");
-        _platformMask = LayerMask.GetMask("Platform");
-        _traversableMask =  _defaultGroundMask & _platformMask;
-        
         _gravity = (-2 * maxJumpHeight) / Mathf.Pow(timeToJumpApex, 2) * Time.fixedDeltaTime;
 
         _availableJumps = maxJumps;
@@ -275,10 +268,10 @@ public class PlatformerController : MonoBehaviour
 
         _standingOnPlatform = false;
         
-        _boxcastHit = Physics2D.BoxCast((Vector2)_position + (Vector2.down * _halfHeight), _groundCheckSize, 0, Vector2.down, Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime), _defaultGroundMask);
+        _boxcastHit = Physics2D.BoxCast((Vector2)_position + (Vector2.down * _halfHeight), _groundCheckSize, 0, Vector2.down, Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime), GameData.defaultGroundMask);
         if(!_boxcastHit)
         {
-            _boxcastHit = Physics2D.BoxCast((Vector2) _position + (Vector2.down * _halfHeight), _groundCheckSize, 0, Vector2.down, Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime), _platformMask);
+            _boxcastHit = Physics2D.BoxCast((Vector2) _position + (Vector2.down * _halfHeight), _groundCheckSize, 0, Vector2.down, Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime), GameData.platformMask);
             if(_boxcastHit)
                 _standingOnPlatform = true;
         }
@@ -464,18 +457,18 @@ public class PlatformerController : MonoBehaviour
         {
             Vector2 rightOrigin = (Vector2) _position + new Vector2(_halfWidth, _halfHeight);
             Vector2 leftOrigin = (Vector2) _position + new Vector2(-_halfWidth, _halfHeight);
-            RaycastHit2D rightHit = Physics2D.Raycast(rightOrigin, Vector2.up, _velocity.y * Time.fixedDeltaTime * 2, _defaultGroundMask);
-            RaycastHit2D leftHit = Physics2D.Raycast(leftOrigin, Vector2.up, _velocity.y * Time.fixedDeltaTime * 2, _defaultGroundMask);
+            RaycastHit2D rightHit = Physics2D.Raycast(rightOrigin, Vector2.up, _velocity.y * Time.fixedDeltaTime * 2, GameData.defaultGroundMask);
+            RaycastHit2D leftHit = Physics2D.Raycast(leftOrigin, Vector2.up, _velocity.y * Time.fixedDeltaTime * 2, GameData.defaultGroundMask);
 
             if (leftHit && !rightHit)
             {
-                RaycastHit2D leftHitDist = Physics2D.Raycast(new Vector2(_position.x, leftHit.point.y + 0.01f), Vector2.left, _halfWidth, _defaultGroundMask);
+                RaycastHit2D leftHitDist = Physics2D.Raycast(new Vector2(_position.x, leftHit.point.y + 0.01f), Vector2.left, _halfWidth, GameData.defaultGroundMask);
                 if (leftHitDist && (_halfWidth - leftHitDist.distance) <= _verticalCornerCorrectionWidth)
                     _position += Vector2.right * ((_halfWidth - leftHitDist.distance) + 0.05f);
             }
             else if (rightHit && !leftHit)
             {
-                RaycastHit2D rightHitDist = Physics2D.Raycast(new Vector2(_position.x, rightHit.point.y + 0.01f), Vector2.right, _halfWidth, _defaultGroundMask);
+                RaycastHit2D rightHitDist = Physics2D.Raycast(new Vector2(_position.x, rightHit.point.y + 0.01f), Vector2.right, _halfWidth, GameData.defaultGroundMask);
                 if (rightHitDist && (_halfWidth - rightHitDist.distance) <= _verticalCornerCorrectionWidth)
                     _position += Vector2.left * ((_halfWidth - rightHitDist.distance) + 0.05f);
             }
@@ -487,11 +480,11 @@ public class PlatformerController : MonoBehaviour
         if (_velocity.x > 0)
         {
             Vector2 rightOrigin = (Vector2) _position + new Vector2(_halfWidth, -_halfHeight);
-            RaycastHit2D rightHit = Physics2D.Raycast(rightOrigin, Vector2.right, _velocity.x * Time.fixedDeltaTime * 2, _traversableMask);
+            RaycastHit2D rightHit = Physics2D.Raycast(rightOrigin, Vector2.right, _velocity.x * Time.fixedDeltaTime * 2, GameData.traversableMask);
 
             if (rightHit)
             {
-                RaycastHit2D rightHitDist = Physics2D.Raycast(new Vector2(rightHit.point.x + 0.01f, _position.y + _halfHeight), Vector2.down, _size.y, _traversableMask);
+                RaycastHit2D rightHitDist = Physics2D.Raycast(new Vector2(rightHit.point.x + 0.01f, _position.y + _halfHeight), Vector2.down, _size.y, GameData.traversableMask);
                 if (rightHitDist && (_size.y - rightHitDist.distance) <= _horizontalCornerCorrectionHeight)
                     _position += new Vector2(0.05f, ((_size.y - rightHitDist.distance) + 0.05f));
             }
@@ -499,11 +492,11 @@ public class PlatformerController : MonoBehaviour
         else if (_velocity.x < 0)
         {
             Vector2 leftOrigin = (Vector2) _position + new Vector2(-_halfWidth, -_halfHeight);
-            RaycastHit2D leftHit = Physics2D.Raycast(leftOrigin, Vector2.left, -_velocity.x * Time.fixedDeltaTime * 2, _traversableMask);
+            RaycastHit2D leftHit = Physics2D.Raycast(leftOrigin, Vector2.left, -_velocity.x * Time.fixedDeltaTime * 2, GameData.traversableMask);
 
             if (leftHit)
             {
-                RaycastHit2D leftHitDist = Physics2D.Raycast(new Vector2(leftHit.point.x - 0.05f, _position.y + _halfHeight), Vector2.down, _size.y, _traversableMask);
+                RaycastHit2D leftHitDist = Physics2D.Raycast(new Vector2(leftHit.point.x - 0.05f, _position.y + _halfHeight), Vector2.down, _size.y, GameData.traversableMask);
                 if (leftHitDist && (_size.y - leftHitDist.distance) <= _horizontalCornerCorrectionHeight)
                     _position += new Vector2(-0.05f, ((_size.y - leftHitDist.distance) + 0.05f));
             }
