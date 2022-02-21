@@ -20,16 +20,17 @@ public class PlatformerController : MonoBehaviour
     public float accelerationCurve = 3.66f;
     public float decelerationCurve = 3.66f;
     private Vector2 _velocity;
-    private Vector2 _platformDelta;
-    private Vector2 _lastPlatformVelocity;
+    private Vector2 _kinematicDelta;
+    private Vector2 _lastKinematicVelocity;
     private Vector2 _position;
     //private bool _outOfControl;
     private Vector2 _outOfControlVelocity;
     
     private bool _crouching;
+    private bool _crouchHeld;
     public float crouchTimeToFall = 0.2f;
     public float timeToFallThroughPlatform = 0.1f;
-    private float _timeCrouchingOnPlatform;
+    private float _timeCrouching;
     #endregion
 
     #region ----------------Jumping----------------
@@ -58,6 +59,7 @@ public class PlatformerController : MonoBehaviour
     private bool _inAirFromFalling;
     
     private bool _jumpButtonHolding;
+    private bool _jumpHolding;
     #endregion
 
     #region ----------------Physics----------------
@@ -81,9 +83,9 @@ public class PlatformerController : MonoBehaviour
     private float _groundedDistance;
     private bool _standingOnRigidBody;
     private bool _standingOnPlatform;
-    private bool _standingOnMovingPlatform;
-    private bool _wasStandingOnMovingPlatform;
-    private RaycastHit2D _boxcastHit;
+    private bool _standingOnMovingKinematic;
+    private bool _wasStandingOnMovingKinematic;
+    private RaycastHit2D _groundHit;
     private float _gravity;
     #endregion
 
@@ -168,8 +170,8 @@ public class PlatformerController : MonoBehaviour
             _timeOnGround = Mathf.Infinity;
             if(_standingOnRigidBody)
             {
-                _wasStandingOnMovingPlatform = true;
-                MovingPlatformUpdate();
+                _wasStandingOnMovingKinematic = true;
+                UpdateMovingKinematic();
             }
         }
         else
@@ -238,51 +240,55 @@ public class PlatformerController : MonoBehaviour
         _crouching = value > 0;
     }
     #endregion
-
     
+    
+    #region ----------------FixedUpdate Functions----------------
     private void FixedUpdate()
     {
-        _velocity = _rb.velocity;
         _position = (Vector2)transform.position;
 
         CheckIfGrounded();
         CheckPlatformFall();
         
-        MovingPlatformUpdate();
-        JumpingUpdate();
-        GravityUpdate();
-        MovementUpdate();
+        UpdateGravity();
+        UpdateJumping();
+        UpdateMovingKinematic();
+        UpdateMovement();
         
-        SnapToGroundUpdate();
-        CornerCorrectionUpdate();
+        UpdateSnapToGround();
+        UpdateCornerCorrection();
         
         _rb.velocity = _velocity;
         transform.position = _position;
         
-        DebugTrailsUpdate();
+        UpdateDebugTrails();
     }
     
-    #region ----------------FixedUpdate Functions----------------
     private bool CheckIfGrounded()
     {
         _wasGrounded = _isGrounded;
 
         _standingOnPlatform = false;
         
-        _boxcastHit = Physics2D.BoxCast((Vector2)_position + (Vector2.down * _halfHeight), _groundCheckSize, 0, Vector2.down, Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime), GameData.defaultGroundMask);
-        if(!_boxcastHit)
+        RaycastHit2D _DefaultGroundHit = Physics2D.BoxCast((Vector2)_position + (Vector2.down * _halfHeight), _groundCheckSize, 0, Vector2.down, Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime), GameData.defaultGroundMask);
+        RaycastHit2D _PlatformHit = Physics2D.BoxCast((Vector2) _position + (Vector2.down * _halfHeight), _groundCheckSize, 0, Vector2.down, Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime), GameData.platformMask);
+
+        if(_PlatformHit && _velocity.y <= 0 && !_crouchHeld)
         {
-            _boxcastHit = Physics2D.BoxCast((Vector2) _position + (Vector2.down * _halfHeight), _groundCheckSize, 0, Vector2.down, Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime), GameData.platformMask);
-            if(_boxcastHit)
-                _standingOnPlatform = true;
+            _groundHit = _PlatformHit;
+            _standingOnPlatform = true;
+        }
+        else
+        {
+            _groundHit = _DefaultGroundHit;
         }
 
-        if ((_boxcastHit && !_standingOnPlatform) || (_standingOnPlatform && _velocity.y <= 0))
+        if (_groundHit)
         {
             _isGrounded = true;
-            _groundedDistance = _boxcastHit.distance;
+            _groundedDistance = _groundHit.distance;
             _timeOnGround += Time.fixedDeltaTime;
-            if (_boxcastHit.rigidbody)
+            if (_groundHit.rigidbody)
                 _standingOnRigidBody = true;
             else
                 _standingOnRigidBody = false;
@@ -300,26 +306,24 @@ public class PlatformerController : MonoBehaviour
     private void CheckPlatformFall()
     {
         if (_crouching)
-            _timeCrouchingOnPlatform = Mathf.Max(_timeCrouchingOnPlatform + Time.deltaTime, 0);
+            _timeCrouching = Mathf.Max(_timeCrouching + Time.deltaTime, 0);
         else
-            _timeCrouchingOnPlatform = Mathf.Min(_timeCrouchingOnPlatform - Time.deltaTime, 0);
+            _timeCrouching = Mathf.Min(_timeCrouching - Time.deltaTime, 0);
         
-        if (_timeCrouchingOnPlatform >= crouchTimeToFall)
+        if (_timeCrouching >= crouchTimeToFall)
         {
-            // _isGrounded = false;
-            // _groundedDistance = Mathf.Infinity;
-            // _timeOnGround += Time.fixedDeltaTime;
-            // _standingOnRigidBody = false;
+            _crouchHeld = true;
             gameObject.layer = LayerMask.NameToLayer("PlayerPlatformFall");
         }
-        else if(_timeCrouchingOnPlatform < -timeToFallThroughPlatform)
+        else if(_timeCrouching < -timeToFallThroughPlatform)
         {
+            _crouchHeld = false;
             gameObject.layer = LayerMask.NameToLayer("Player");
         }
 
     }
     
-    private void JumpingUpdate()
+    private void UpdateJumping()
     {
         //first frame landing on ground
         if (!_wasGrounded && _isGrounded)
@@ -343,7 +347,7 @@ public class PlatformerController : MonoBehaviour
                 _inAirFromJumping = true;
             else
                 _inAirFromFalling = true;
-
+            
             onLeaveGround?.Invoke();
         }
 
@@ -372,8 +376,10 @@ public class PlatformerController : MonoBehaviour
         _jumpInCooldown = _timeSinceLastJump < jumpCooldownTime;
     }
 
-    private void GravityUpdate()
+    private void UpdateGravity()
     {
+        _jumpHolding = _jumpButtonHolding && _inAirFromJumping && _velocity.y > 0;
+        
         //Gravity
         if (_velocity.y < 0)
             _fastFall = true;
@@ -381,22 +387,24 @@ public class PlatformerController : MonoBehaviour
         if (_fastFall)
             currentGravity *= gravityMultiplier;
         
-        if (!_isGrounded || (_standingOnPlatform && _crouching))
-            _velocity.y += currentGravity;
-        else if(!_jumpInCooldown && !_standingOnRigidBody && !(_jumpButtonHolding && _velocity.y > 0))
+        if(_isGrounded && !_jumpInCooldown)
             _velocity.y = 0;
+        else
+            _velocity.y += currentGravity;
+
         _velocity.y = Mathf.Max(_velocity.y, maxFallSpeed);
     }
 
-    private void MovementUpdate()
+    private void UpdateMovement()
     {
         _velocity -= _outOfControlVelocity;
         
         //Movement
         float percentSpeed = Mathf.Abs(_velocity.x) / maxRunSpeed;
-        bool a = _moveInputDirection.x < -0.01f && _velocity.x <= 0.1f;
-        bool b = _moveInputDirection.x > 0.01f && _velocity.x >= -0.1f;
-        if ((a || b) && percentSpeed <= 1) //accelerate with the flow
+        bool movingWithVelocity = 
+            _moveInputDirection.x < -0.01f && _velocity.x <= 0.1f ||
+            _moveInputDirection.x > 0.01f && _velocity.x >= -0.1f;
+        if (movingWithVelocity && percentSpeed <= 1) //accelerate with the flow
         {
             if (_isGrounded)
                 percentSpeed = Mathf.Clamp01(Mathf.Pow(percentSpeed, accelerationCurve) + ((1 / timeToMaxSpeed) * Time.fixedDeltaTime));
@@ -417,41 +425,58 @@ public class PlatformerController : MonoBehaviour
         _velocity += _outOfControlVelocity;
     }
 
+    public float minimumPlatformStickFallVelocity = -1;
+    public float minimumJerk = -1;
+
     // ReSharper disable Unity.PerformanceAnalysis
-    private void MovingPlatformUpdate()
+    private void UpdateMovingKinematic()
     {
-        _wasStandingOnMovingPlatform = _standingOnMovingPlatform;
-        _standingOnMovingPlatform = false;
+        _wasStandingOnMovingKinematic = _standingOnMovingKinematic;
+        _standingOnMovingKinematic = false;
         MovingKinematic movingKinematic = null;
         
         if(_standingOnRigidBody)
         {
-            movingKinematic = _boxcastHit.rigidbody.GetComponent<MovingKinematic>();
+            movingKinematic = _groundHit.rigidbody.GetComponent<MovingKinematic>();
             if (movingKinematic)
-                _standingOnMovingPlatform = true;
-        }
-        
-        if(_standingOnMovingPlatform && movingKinematic)
-        {
-            _platformDelta = movingKinematic.Delta;
-            _lastPlatformVelocity = movingKinematic.Velocity;
-            
-            _position.x += _platformDelta.x;
-            if(_lastPlatformVelocity.y > 1)
-                _velocity = _lastPlatformVelocity;
+                _standingOnMovingKinematic = true;
         }
 
-        if (_wasStandingOnMovingPlatform && !_standingOnMovingPlatform) //if leaving moving platform
+        bool leavingMovingKinematic = false;
+        
+        if(movingKinematic)
         {
-            _lastPlatformVelocity.y = Mathf.Max(_lastPlatformVelocity.y, 0);
-            _outOfControlVelocity = _lastPlatformVelocity;
-            //_velocity += _lastPlatformVelocity;
-            _lastPlatformVelocity = Vector2.zero;
-            _platformDelta = Vector2.zero;
+            _kinematicDelta = movingKinematic.PreviousFrameDelta;
+            _lastKinematicVelocity = movingKinematic.PreviousFrameVelocity;
+
+            float jerk = movingKinematic.NextFrameDelta.y - movingKinematic.PreviousFrameDelta.y;
+            //if kinematic falls too fast, release player
+            leavingMovingKinematic |= movingKinematic.NextFrameVelocity.y < minimumPlatformStickFallVelocity;
+            //if kinematic decelerates too fast, release player
+            leavingMovingKinematic |= jerk < minimumJerk;
+            
+            if(!leavingMovingKinematic)
+                _position += _kinematicDelta;
+
+            // if(movingKinematic.Velocity.y > 1)
+            //     movingKinematic.Velocity;
+        }
+
+        leavingMovingKinematic |= _wasStandingOnMovingKinematic && !_standingOnMovingKinematic;
+
+        if (leavingMovingKinematic) //if leaving moving kinematic
+        {
+            _position.y += groundCheckThickness + 0.01f;
+
+            _outOfControlVelocity = _lastKinematicVelocity;
+            _outOfControlVelocity.y = Mathf.Max(_outOfControlVelocity.y, maxFallSpeed);
+            _velocity += _outOfControlVelocity;
+            _lastKinematicVelocity = Vector2.zero;
+            _kinematicDelta = Vector2.zero;
         }
     }
 
-    private void CornerCorrectionUpdate()
+    private void UpdateCornerCorrection()
     {
         //Vertical Corner Correction
         if(_velocity.y > 0)
@@ -504,15 +529,15 @@ public class PlatformerController : MonoBehaviour
         }
     }
 
-    private void SnapToGroundUpdate()
+    private void UpdateSnapToGround()
     {
         //Snap To Ground
-        if (!_jumpInCooldown && _isGrounded && _velocity.y <= 0 && !(_jumpButtonHolding && _velocity.y > 0))
+        if (!_jumpInCooldown && !_jumpHolding && _isGrounded)
             if(_groundedDistance < Mathf.Infinity)
                 _position += new Vector2(0, -_groundedDistance + 0.001f);
     }
 
-    private void DebugTrailsUpdate()
+    private void UpdateDebugTrails()
     {
         if (!(xpostrail && xveltrail))
             return;
@@ -532,7 +557,7 @@ public class PlatformerController : MonoBehaviour
     #region ----------------Jump Functions--------
     private void Jump()
     {
-        _velocity.y = (2 * maxJumpHeight) / timeToJumpApex;
+        _velocity.y += (2 * maxJumpHeight) / timeToJumpApex;
 
         _fastFall = !_jumpButtonHolding;
         _inAirFromJumping = true;
@@ -552,11 +577,13 @@ public class PlatformerController : MonoBehaviour
         _availableJumps--;
         _outOfControlVelocity = Vector2.zero;
         
-        // bool a = _moveInputDirection.x < -0.01f && _velocity.x >= 0.1f;
-        // bool b = _moveInputDirection.x > 0.01f && _velocity.x <= -0.1f;
-        // if (a || b) //trying to jump in opposite direction
-        //     _velocity.x = 0;
-        
+        bool movingAgainstVelocity =
+            _moveInputDirection.x < -0.01f && _velocity.x >= 0.1f ||
+            _moveInputDirection.x > 0.01f && _velocity.x <= -0.1f;
+        if (movingAgainstVelocity) //trying to jump in opposite direction
+            _velocity.x = 0;
+
+        _velocity.y = 0;
         Jump();
         onAirJump?.Invoke();
     }

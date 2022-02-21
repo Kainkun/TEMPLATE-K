@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
 
+[RequireComponent(typeof(MovingKinematic))]
 public class LerpMovingKinematic : MonoBehaviour
 {
     private MovingKinematic _movingKinematic;
