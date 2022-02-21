@@ -87,6 +87,7 @@ public class PlatformerController : MonoBehaviour
     private bool _wasStandingOnMovingKinematic;
     private RaycastHit2D _groundHit;
     private float _gravity;
+    public float minimumStickFallVelocity = -15;
     #endregion
 
     #region ----------------Effects----------------
@@ -426,9 +427,7 @@ public class PlatformerController : MonoBehaviour
 
         _velocity += _outOfControlVelocity;
     }
-
-    public float minimumPlatformStickFallVelocity = -1;
-    public float minimumJerk = -1;
+    
 
     // ReSharper disable Unity.PerformanceAnalysis
     private void UpdateMovingKinematic()
@@ -453,9 +452,9 @@ public class PlatformerController : MonoBehaviour
 
             float jerk = movingKinematic.NextFrameDelta.y - movingKinematic.PreviousFrameDelta.y;
             //if kinematic falls too fast, release player
-            leavingMovingKinematic |= movingKinematic.NextFrameVelocity.y < minimumPlatformStickFallVelocity;
+            leavingMovingKinematic |= movingKinematic.NextFrameVelocity.y < minimumStickFallVelocity;
             //if kinematic decelerates too fast, release player
-            leavingMovingKinematic |= jerk < minimumJerk;
+            leavingMovingKinematic |= jerk < -0.1f;
             
             if(!leavingMovingKinematic)
                 _position += _kinematicDelta;
