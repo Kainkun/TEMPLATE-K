@@ -10,7 +10,7 @@ public class MovingKinematic : MonoBehaviour
 {
     private Vector2 _startPosition;
     private Rigidbody2D rb;
-    private Vector2 _currentPosition;
+    private Vector2 _previousFramePosition;
     private Vector2 _nextFramePosition;
     private Vector2 _nextFrameVelocity;
     private Vector2 _previousFrameVelocity;
@@ -18,7 +18,8 @@ public class MovingKinematic : MonoBehaviour
     private Vector2 _previousFrameDelta;
 
     public Vector2 StartPosition => _startPosition;
-    public Vector2 CurrentPosition => _nextFramePosition;
+    public Vector2 NextFramePosition => _nextFramePosition;
+    public Vector2 PreviousFramePosition => _previousFramePosition;
     public Vector2 NextFrameVelocity => _nextFrameVelocity;
     public Vector2 PreviousFrameVelocity => _previousFrameVelocity;
     public Vector2 NextFrameDelta => _nextFrameDelta;
@@ -34,20 +35,19 @@ public class MovingKinematic : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         _startPosition = transform.position;
-        _currentPosition = _startPosition;
+        _previousFramePosition = _startPosition;
         _nextFramePosition = _startPosition;
     }
 
     public void MovementUpdate(Vector2 position)
     {
-        rb.MovePosition(_nextFramePosition);
-        _currentPosition = _nextFramePosition;
+        _previousFramePosition = _nextFramePosition;
         _previousFrameDelta = _nextFrameDelta;
         _previousFrameVelocity = _nextFrameVelocity;
+        rb.MovePosition(_nextFramePosition);
 
         _nextFramePosition = position;
-
-        _nextFrameDelta = _nextFramePosition - _currentPosition;
+        _nextFrameDelta = _nextFramePosition - _previousFramePosition;
         _nextFrameVelocity = _nextFrameDelta / Time.fixedDeltaTime;
     }
 }
