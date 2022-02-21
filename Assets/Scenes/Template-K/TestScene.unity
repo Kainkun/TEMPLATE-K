@@ -2102,6 +2102,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1675388496}
     - target: {fileID: 6587944478331042667, guid: e45aa09a3fa112e46a20dcb107c2ae89, type: 3}
+      propertyPath: coyoteTime
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6587944478331042667, guid: e45aa09a3fa112e46a20dcb107c2ae89, type: 3}
       propertyPath: minimumJerk
       value: -0.1
       objectReference: {fileID: 0}

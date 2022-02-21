@@ -70,7 +70,7 @@ public class PlatformerController : MonoBehaviour
     private Vector2 _size;
     private float _halfWidth;
     private float _halfHeight;
-    private Vector2 _groundCheckSize;
+    private Vector2 _groundCeilingCheckSize;
     private float _timeOnGround;
     [Range(0,0.99f)]
     public float verticalCornerCorrectionWidthPercent = 0.5f;
@@ -150,7 +150,7 @@ public class PlatformerController : MonoBehaviour
         _size = _boxCollider.size;
         _halfWidth = _size.x / 2;
         _halfHeight = _size.y / 2;
-        _groundCheckSize = new Vector2(_size.x, 0.001f);
+        _groundCeilingCheckSize = new Vector2(_size.x, 0.001f);
         _verticalCornerCorrectionWidth = _halfWidth * verticalCornerCorrectionWidthPercent;
         _horizontalCornerCorrectionHeight = _size.y * horizontalCornerCorrectionHeightPercent;
 
@@ -159,7 +159,7 @@ public class PlatformerController : MonoBehaviour
         _availableJumps = maxJumps;
         _timeSinceJumpPress = Mathf.Infinity;
         _timeSinceLastJump = Mathf.Infinity;
-        _fastFall = true;
+        //_fastFall = true;
         _position = transform.position;
         _velocity = Vector2.zero;
         _rb.velocity = Vector2.zero;
@@ -231,7 +231,7 @@ public class PlatformerController : MonoBehaviour
         else
         {
             _jumpButtonHolding = false;
-            _fastFall = true;
+            //_fastFall = true;
         }
     }
 
@@ -254,6 +254,7 @@ public class PlatformerController : MonoBehaviour
         UpdateJumping();
         UpdateMovingKinematic();
         UpdateMovement();
+        UpdateCollision();
         
         UpdateSnapToGround();
         UpdateCornerCorrection();
@@ -270,8 +271,8 @@ public class PlatformerController : MonoBehaviour
 
         _standingOnPlatform = false;
         
-        RaycastHit2D _DefaultGroundHit = Physics2D.BoxCast((Vector2)_position + (Vector2.down * _halfHeight), _groundCheckSize, 0, Vector2.down, Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime), GameData.defaultGroundMask);
-        RaycastHit2D _PlatformHit = Physics2D.BoxCast((Vector2) _position + (Vector2.down * _halfHeight), _groundCheckSize, 0, Vector2.down, Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime), GameData.platformMask);
+        RaycastHit2D _DefaultGroundHit = Physics2D.BoxCast((Vector2)_position + (Vector2.down * _halfHeight), _groundCeilingCheckSize, 0, Vector2.down, Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime), GameData.defaultGroundMask);
+        RaycastHit2D _PlatformHit = Physics2D.BoxCast((Vector2) _position + (Vector2.down * _halfHeight), _groundCeilingCheckSize, 0, Vector2.down, Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime), GameData.platformMask);
 
         if(_PlatformHit && _velocity.y <= 0 && !_crouchHeld)
         {
@@ -328,7 +329,6 @@ public class PlatformerController : MonoBehaviour
         //first frame landing on ground
         if (!_wasGrounded && _isGrounded)
         {
-            _fastFall = true;
             _timeSinceLeftGround = 0;
             _inAirFromJumping = false;
             _inAirFromFalling = false;
@@ -381,8 +381,10 @@ public class PlatformerController : MonoBehaviour
         _jumpHolding = _jumpButtonHolding && _inAirFromJumping && _velocity.y > 0;
         
         //Gravity
-        if (_velocity.y < 0)
+        if ((!_jumpButtonHolding || _velocity.y < 0) && !_isCoyoteTime && !_isGrounded)
             _fastFall = true;
+        else
+            _fastFall = false;
         float currentGravity = _gravity;
         if (_fastFall)
             currentGravity *= gravityMultiplier;
@@ -476,6 +478,12 @@ public class PlatformerController : MonoBehaviour
         }
     }
 
+    void UpdateCollision()
+    {
+        if (Physics2D.BoxCast((Vector2) _position + (Vector2.up * _halfHeight), _groundCeilingCheckSize, 0, Vector2.up, 0.1f, ~(GameData.playerMask | GameData.platformMask)))
+            _velocity.y = Mathf.Min(_velocity.y, 0);
+    }
+
     private void UpdateCornerCorrection()
     {
         //Vertical Corner Correction
@@ -559,7 +567,6 @@ public class PlatformerController : MonoBehaviour
     {
         _velocity.y += (2 * maxJumpHeight) / timeToJumpApex;
 
-        _fastFall = !_jumpButtonHolding;
         _inAirFromJumping = true;
         _inAirFromFalling = false;
         _timeSinceLastJump = 0;
@@ -610,6 +617,6 @@ public class PlatformerController : MonoBehaviour
         else if(velocity.x < 0)
             Gizmos.DrawWireCube(position + new Vector3(-_halfWidth + velocity.x * Time.fixedDeltaTime, -_size.y / 2 + _horizontalCornerCorrectionHeight / 2, 0), new Vector3(velocity.x * Time.fixedDeltaTime * 2, _horizontalCornerCorrectionHeight, 0));
 
-        Gizmos.DrawWireCube(position + new Vector3(0, -_halfHeight - (Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime) / 2), 0), new Vector3(_groundCheckSize.x, Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime), 0));
+        Gizmos.DrawWireCube(position + new Vector3(0, -_halfHeight - (Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime) / 2), 0), new Vector3(_groundCeilingCheckSize.x, Mathf.Max(groundCheckThickness, -_velocity.y * Time.fixedDeltaTime), 0));
     }
 }
