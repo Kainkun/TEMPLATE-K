@@ -50,4 +50,23 @@ public class MovingKinematic : MonoBehaviour
         _nextFrameDelta = _nextFramePosition - _previousFramePosition;
         _nextFrameVelocity = _nextFrameDelta / Time.fixedDeltaTime;
     }
+    
+    public void MovementUpdate()
+    {
+        _previousFramePosition = _nextFramePosition;
+        _previousFrameDelta = _nextFrameDelta;
+        _previousFrameVelocity = _nextFrameVelocity;
+        rb.MovePosition(_nextFramePosition);
+
+        _nextFrameDelta = _nextFramePosition - _previousFramePosition;
+        _nextFrameVelocity = _nextFrameDelta / Time.fixedDeltaTime;
+    }
+    
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.green;
+        Gizmos.DrawSphere(_previousFramePosition, 0.2f);
+        Gizmos.color = Color.red;
+        Gizmos.DrawSphere(_nextFramePosition, 0.2f);
+    }
 }
