@@ -2,6 +2,7 @@ using System;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
 using UnityEngine.Rendering;
 using Random = UnityEngine.Random;
 
@@ -88,6 +89,8 @@ public class PlatformerController : MonoBehaviour
     private RaycastHit2D _groundHit;
     private float _gravity;
     public float minimumStickFallVelocity = -15;
+    private bool _isCrushed;
+    public Action onCrushed;
     #endregion
 
     #region ----------------Effects----------------
@@ -479,8 +482,21 @@ public class PlatformerController : MonoBehaviour
 
     void UpdateCollision()
     {
-        if (Physics2D.BoxCast((Vector2) _position + (Vector2.up * _halfHeight), _groundCeilingCheckSize, 0, Vector2.up, 0.1f, ~(GameData.playerMask | GameData.platformMask)))
+        RaycastHit2D headBump = Physics2D.BoxCast((Vector2) _position + (Vector2.up * _halfHeight), _groundCeilingCheckSize, 0, Vector2.up, 0.1f, GameData.defaultGroundMask);
+
+        if(headBump)
             _velocity.y = Mathf.Min(_velocity.y, 0);
+
+        bool headBumpIsMovingKinematic = false;
+        if (headBump)
+            headBumpIsMovingKinematic = headBump.transform.GetComponent<MovingKinematic>();
+
+        bool crushed = (headBump && _standingOnMovingKinematic) || (headBumpIsMovingKinematic && _isGrounded);
+        
+        if (crushed && !_isCrushed)
+            onCrushed?.Invoke();
+
+        _isCrushed = crushed;
     }
 
     private void UpdateCornerCorrection()
