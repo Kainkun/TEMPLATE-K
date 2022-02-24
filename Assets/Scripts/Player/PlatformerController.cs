@@ -85,6 +85,7 @@ public class PlatformerController : MonoBehaviour
     private bool _standingOnRigidBody;
     private bool _standingOnPlatform;
     private bool _standingOnMovingKinematic;
+    private MovingKinematic _currentMovingKinematic;
     private bool _wasStandingOnMovingKinematic;
     private RaycastHit2D _groundHit;
     private float _gravity;
@@ -437,25 +438,27 @@ public class PlatformerController : MonoBehaviour
     {
         _wasStandingOnMovingKinematic = _standingOnMovingKinematic;
         _standingOnMovingKinematic = false;
-        MovingKinematic movingKinematic = null;
+        _currentMovingKinematic = null;
         
         if(_standingOnRigidBody)
         {
-            movingKinematic = _groundHit.rigidbody.GetComponent<MovingKinematic>();
-            if (movingKinematic)
+            _currentMovingKinematic = _groundHit.rigidbody.GetComponent<MovingKinematic>();
+            if (_currentMovingKinematic)
+            {
                 _standingOnMovingKinematic = true;
+            }
         }
 
         bool leavingMovingKinematic = false;
         
-        if(movingKinematic)
+        if(_currentMovingKinematic)
         {
-            _kinematicDelta = movingKinematic.PreviousFrameDelta;
-            _lastKinematicVelocity = movingKinematic.PreviousFrameVelocity;
+            _kinematicDelta = _currentMovingKinematic.PreviousFrameDelta;
+            _lastKinematicVelocity = _currentMovingKinematic.PreviousFrameVelocity;
 
-            float jerk = movingKinematic.NextFrameDelta.y - movingKinematic.PreviousFrameDelta.y;
+            float jerk = _currentMovingKinematic.NextFrameDelta.y - _currentMovingKinematic.PreviousFrameDelta.y;
             //if kinematic falls too fast, release player
-            leavingMovingKinematic |= movingKinematic.NextFrameVelocity.y < minimumStickFallVelocity;
+            leavingMovingKinematic |= _currentMovingKinematic.NextFrameVelocity.y < minimumStickFallVelocity;
             //if kinematic decelerates too fast, release player
             leavingMovingKinematic |= jerk < -0.1f;
             
@@ -491,8 +494,9 @@ public class PlatformerController : MonoBehaviour
         if (headBump)
             headBumpIsMovingKinematic = headBump.transform.GetComponent<MovingKinematic>();
 
-        bool crushed = (headBump && _standingOnMovingKinematic) || (headBumpIsMovingKinematic && _isGrounded);
-        
+        bool standingOnSameAsHeadBump = _currentMovingKinematic && _currentMovingKinematic.RigidBody == headBump.rigidbody;
+        bool standingOnOrHeadBumpIsMovingKinematic = (headBump && _standingOnMovingKinematic) || (headBumpIsMovingKinematic && _isGrounded);
+        bool crushed = !standingOnSameAsHeadBump && standingOnOrHeadBumpIsMovingKinematic;
         if (crushed && !_isCrushed)
             onCrushed?.Invoke();
 
