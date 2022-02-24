@@ -7,26 +7,44 @@ using UnityEngine;
 public class Entity : MonoBehaviour
 {
     public int maxHealth = 3;
-    public bool invulnerable;
+    public bool ignoreDamage;
     public int currentHealth;
+    public Action<Entity> onDeath;
+    public List<Entity> childrenEntities;
+    public bool destroyOnDeath;
+    public bool isDead;
 
-    private void Start()
+    protected virtual void Awake()
     {
         currentHealth = maxHealth;
+
+        foreach (Entity childrenEntity in childrenEntities)
+            childrenEntity.onDeath += ChildDeath;
     }
 
-    public void TakeDamage(int damage)
+    public virtual void TakeDamage(int damage)
     {
-        if(invulnerable)
+        if(ignoreDamage)
             return;
         
-        currentHealth -= damage; 
+        currentHealth -= damage;
         if (currentHealth <= 0)
             Die();
     }
 
-    public void Die()
+    protected virtual void ChildDeath(Entity child)
     {
-        Destroy(gameObject);
+        childrenEntities.Remove(child);
+    }
+
+    public virtual void Die()
+    {
+        if(isDead)
+            return;;
+        
+        isDead = true;
+        onDeath?.Invoke(this);
+        if(destroyOnDeath)
+            Destroy(gameObject);
     }
 }
