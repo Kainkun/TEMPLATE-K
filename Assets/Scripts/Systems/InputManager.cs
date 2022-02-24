@@ -136,4 +136,13 @@ public class InputManager : SystemSingleton<InputManager>
     {
         Look?.Invoke(value.Get<Vector2>());
     }
+    
+    public Action Primary;
+    public void OnPrimary() => Primary?.Invoke();
+    
+    public Action Secondary;
+    public void OnSecondary() => Secondary?.Invoke();
+    
+    public Action Tertiary;
+    public void OnTertiary() => Tertiary?.Invoke();
 }

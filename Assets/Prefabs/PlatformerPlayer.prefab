@@ -98,6 +98,7 @@ GameObject:
   - component: {fileID: 6587944478331042669}
   - component: {fileID: 6587944478331042667}
   - component: {fileID: 6587944478331042646}
+  - component: {fileID: 1007873088512976279}
   - component: {fileID: 6587944478331042647}
   m_Layer: 31
   m_Name: PlatformerPlayer
@@ -466,6 +467,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mark: {fileID: 0}
   pullSpeed: 5
+--- !u!114 &1007873088512976279
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6587944478331042670}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2138ec09354b01b45b1123bbf0340510, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 3
+  ignoreDamage: 0
+  currentHealth: 0
+  childrenEntities: []
+  destroyOnDeath: 1
+  isDead: 0
 --- !u!114 &6587944478331042647
 MonoBehaviour:
   m_ObjectHideFlags: 0
