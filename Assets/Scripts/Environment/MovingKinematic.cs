@@ -55,12 +55,12 @@ public class MovingKinematic : MonoBehaviour
     public void MovementUpdate()
     {
         _previousFramePosition = _nextFramePosition;
-        _previousFrameDelta = _nextFrameDelta;
-        _previousFrameVelocity = _nextFrameVelocity;
+        _previousFrameDelta = Vector2.zero;
+        _previousFrameVelocity = Vector2.zero;
         _rb.MovePosition(_nextFramePosition);
 
-        _nextFrameDelta = _nextFramePosition - _previousFramePosition;
-        _nextFrameVelocity = _nextFrameDelta / Time.fixedDeltaTime;
+        _nextFrameDelta = Vector2.zero;
+        _nextFrameVelocity = Vector2.zero;
     }
     
     private void OnDrawGizmos()
